@@ -10,14 +10,16 @@
 #   # 只推本地裸仓库（零依赖，随时可做）
 #   .\push-all.ps1
 #
-#   # 推到 Gitee（需要先建好 4 个空仓库 + 生成 token）
-#   .\push-all.ps1 -Provider gitee -User <用户名> -Token <token>
+#   # 推到 GitHub —— 凭据自动从 _local\secrets.json 读，不用每次贴 token
+#   .\push-all.ps1 -Provider github
 #
-#   # 推到 GitHub
+#   # 也可以显式给（会覆盖 secrets.json）
 #   .\push-all.ps1 -Provider github -User <用户名> -Token <token>
 #
 #   # 只推某几个
 #   .\push-all.ps1 -Only dsh,HeadlessPanel
+#
+# 凭据优先级：命令行参数 > _local\secrets.json > git 凭据助手（交互式）
 
 [CmdletBinding()]
 param(
@@ -40,6 +42,32 @@ function Head([string]$m){ Write-Host ''; Say "════ $m ════" 'Cy
 
 $git = (Get-Command git -ErrorAction SilentlyContinue).Source
 if (-not $git) { Bad 'git 未安装'; exit 1 }
+
+# ── 凭据解析：命令行 > _local\secrets.json > 交互式 ──
+$secretsPath = Join-Path $root '_local\secrets.json'
+$secrets = $null
+if (Test-Path -LiteralPath $secretsPath) {
+    try {
+        $secrets = [System.IO.File]::ReadAllText($secretsPath, [System.Text.Encoding]::UTF8) | ConvertFrom-Json
+    } catch {
+        Warn "secrets.json 解析失败：$($_.Exception.Message.Split(""`n"")[0])"
+    }
+}
+
+if (-not $User -or -not $Token) {
+    if ($secrets -and $Provider -in @('github','gitee')) {
+        $sect = $secrets.$Provider
+        if ($sect) {
+            if (-not $User  -and $sect.user)  { $User  = $sect.user;  Ok "用户名从 secrets.json 读取：$User" }
+            if (-not $Token -and $sect.token) { $Token = $sect.token; Ok 'token 从 secrets.json 读取' }
+        }
+    }
+}
+
+if ($Provider -ne 'local' -and -not $Token) {
+    Warn '没找到 token —— 会走 git 凭据助手（交互式，可能弹窗）'
+    Say ("   想免交互就把 token 填进：{0}" -f $secretsPath) 'DarkGray'
+}
 
 # ── 仓库清单：名字 / 路径 / 远程仓库名 / 一句话描述 ──
 $repos = @(
@@ -98,8 +126,9 @@ foreach ($r in $repos) {
         $env:GIT_TERMINAL_PROMPT = '0'
         $ls = & $git ls-remote --heads $urlPlain 2>&1
         if ($LASTEXITCODE -ne 0) {
+            $newUrl = if ($Provider -eq 'github') { 'https://github.com/new' } else { 'https://gitee.com/projects/new' }
             Warn "远程不存在：$urlPlain"
-            Say ("      请先建库：https://{0}/projects/new  （名字 {1}，选私有）" -f $host_, $r.Name) 'DarkGray'
+            Say ("      请先建库：{0}  （名字 {1}，选私有，不要初始化 README）" -f $newUrl, $r.Name) 'DarkGray'
             $fail += $r.Name
             continue
         }

@@ -60,3 +60,7 @@ machines.json
 工作区/headless-panel/
 工作区/fika-inventory-resync/
 工作区/TacticalSprint-Companions/
+# ── 本机私密配置（token 等），【绝不】入库 ──
+_local/
+secrets.json
+.git-credentials
