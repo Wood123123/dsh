@@ -69,9 +69,9 @@ try {
             Ok "已创建裸仓库: $BarePath"
         }
         $remotes = & $git remote 2>&1
-        if ($remotes -notcontains 'local') { & $git remote add local $BarePath }
-        & $git push -q local --all 2>&1 | ForEach-Object { Write-Output ('   ' + $_) }
-        & $git push -q local --tags 2>&1 | ForEach-Object { Write-Output ('   ' + $_) }
+        if ($remotes -notcontains 'origin') { & $git remote add origin $BarePath }
+        & $git push -q origin --all 2>&1 | ForEach-Object { Write-Output ('   ' + $_) }
+        & $git push -q origin --tags 2>&1 | ForEach-Object { Write-Output ('   ' + $_) }
         Ok "已推送到 $BarePath"
         Say ''
         Say '   从这里克隆：' 'DarkGray'
