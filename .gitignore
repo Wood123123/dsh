@@ -52,3 +52,11 @@ desktop.ini
 
 # ── 机器本地路径：不入库（换机器后由 bootstrap.ps1 重新生成）──
 machines.json
+
+# ─────────────────────────────────────────────────────────
+#  以下 3 个目录是【独立的 git 仓库】（已可发布），父仓库不跟踪
+#  避免出现 embedded repository / gitlink
+# ─────────────────────────────────────────────────────────
+工作区/headless-panel/
+工作区/fika-inventory-resync/
+工作区/TacticalSprint-Companions/
