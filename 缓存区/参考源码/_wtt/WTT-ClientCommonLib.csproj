@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>WTT-ClientCommonLib</AssemblyName>
+    <GenerateAssemblyInfo>False</GenerateAssemblyInfo>
+    <TargetFramework>netstandard2.1</TargetFramework>
+  </PropertyGroup>
+  <PropertyGroup>
+    <LangVersion>14.0</LangVersion>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <CheckForOverflowUnderflow>False</CheckForOverflowUnderflow>
+  </PropertyGroup>
+  <PropertyGroup />
+  <ItemGroup />
+  <ItemGroup>
+    <Reference Include="UnityEngine.CoreModule" />
+    <Reference Include="UnityEngine.AudioModule" />
+    <Reference Include="Assembly-CSharp" />
+    <Reference Include="spt-reflection" />
+    <Reference Include="BepInEx" />
+    <Reference Include="spt-common" />
+    <Reference Include="UnityEngine.AssetBundleModule" />
+    <Reference Include="spt-custom" />
+    <Reference Include="UnityEngine.PhysicsModule" />
+    <Reference Include="Comfort" />
+    <Reference Include="Newtonsoft.Json" />
+    <Reference Include="bsg.console.core" />
+    <Reference Include="0Harmony" />
+    <Reference Include="UnityEngine.ImageConversionModule" />
+    <Reference Include="UnityEngine.UI" />
+    <Reference Include="UnityEngine.InputLegacyModule" />
+    <Reference Include="UnityEngine.IMGUIModule" />
+  </ItemGroup>
+</Project>

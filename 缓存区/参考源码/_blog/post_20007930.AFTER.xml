@@ -1,0 +1,111 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<methodResponse>
+  <params>
+    <param>
+      <value>
+        <struct>
+          <member>
+            <name>dateCreated</name>
+            <value>
+              <dateTime.iso8601>20260514T20:35:00</dateTime.iso8601>
+            </value>
+          </member>
+          <member>
+            <name>description</name>
+            <value>
+              <string># 一、游戏本体
+链接: https://pan.baidu.com/s/13bbGZXnZXyAFGDBY8MsBIw?pwd=1234 提取码: 1234 
+# 二、运行环境
+# 二、运行环境
+
+&gt; ⚠️ **必须安装（更新）.NET 10.0.X 和 ASP.NET 10.0.X 运行库**，旧版运行库会导致报错或崩溃。
+
+**SPT 4.1.6（4.0.X 以上版本）必装：**
+
+| 运行库 | 说明 | 下载 |
+| --- | --- | --- |
+| .NET Framework 4.7.2 | 新人必装 | [下载](https://dotnet.microsoft.com/download/dotnet-framework/thank-you/net472-developer-pack-offline-installer) |
+| .NET 5.0 Desktop Runtime | 新人必装（部分 MOD 工具需要） | [下载](https://dotnet.microsoft.com/download/dotnet/thank-you/runtime-desktop-5.0.0-windows-x64-installer) |
+| **.NET 10.0.9 Desktop Runtime** | **4.0.X 以上版本，必装或更新** | [下载](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-10.0.9-windows-x64-installer) |
+| **ASP.NET 10.0.9 Runtime** | **4.0.X 以上版本，必装或更新** | [下载](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-aspnetcore-10.0.9-windows-x64-installer) |
+
+**4.0.X 以下版本（旧版 SPT）再加这两个：**
+
+| 运行库 | 下载 |
+| --- | --- |
+| .NET 9.0.17 Desktop Runtime | [下载](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-9.0.17-windows-x64-installer) |
+| ASP.NET Core 9.0.17 Runtime | [下载](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-aspnetcore-9.0.17-windows-x64-installer) |
+
+&gt; 以上整理自 ODDBA 社区《【SPTushonka】SPT 4.1.6 – 40743》（2026-09-19 更新）
+![W4DIJG~NL@YFLUY7HCJKUFS](https://img2024.cnblogs.com/blog/2996523/202605/2996523-20260510154013199-354013153.png)
+# 三、radmin下载及配置
+123
+## 下载地址:https://www.radmin-lan.cn/
+## 配置过程:![X2X@Q6RPHXSR`PX~_S9W2OP](https://img2024.cnblogs.com/blog/2996523/202605/2996523-20260510154159468-1709639499.png)
+![KKOMGNX}W_~8BOT)B7%MP2E](https://img2024.cnblogs.com/blog/2996523/202605/2996523-20260510154209842-1717724230.png)
+![51KF62`BDJ41UAI$(~DEPGM](https://img2024.cnblogs.com/blog/2996523/202605/2996523-20260510154213586-1450218089.png)
+</string>
+            </value>
+          </member>
+          <member>
+            <name>title</name>
+            <value>
+              <string>塔科夫离线版安装教程</string>
+            </value>
+          </member>
+          <member>
+            <name>categories</name>
+            <value>
+              <array>
+                <data>
+                  <value>
+                    <string>[随笔分类]记录</string>
+                  </value>
+                  <value>
+                    <string>[Markdown]</string>
+                  </value>
+                </data>
+              </array>
+            </value>
+          </member>
+          <member>
+            <name>link</name>
+            <value>
+              <string>https://www.cnblogs.com/Wood1130/p/20007930</string>
+            </value>
+          </member>
+          <member>
+            <name>permalink</name>
+            <value>
+              <string>https://www.cnblogs.com/Wood1130/p/20007930</string>
+            </value>
+          </member>
+          <member>
+            <name>postid</name>
+            <value>
+              <i4>20007930</i4>
+            </value>
+          </member>
+          <member>
+            <name>mt_text_more</name>
+            <value>
+              <string></string>
+            </value>
+          </member>
+          <member>
+            <name>mt_excerpt</name>
+            <value>
+              <string></string>
+            </value>
+          </member>
+          <member>
+            <name>mt_keywords</name>
+            <value>
+              <string></string>
+            </value>
+          </member>
+        </struct>
+      </value>
+    </param>
+  </params>
+</methodResponse>

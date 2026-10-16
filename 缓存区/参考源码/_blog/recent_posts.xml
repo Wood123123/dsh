@@ -1,0 +1,2987 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<methodResponse>
+  <params>
+    <param>
+      <value>
+        <array>
+          <data>
+            <value>
+              <struct>
+                <member>
+                  <name>dateCreated</name>
+                  <value>
+                    <dateTime.iso8601>20261001T15:18:00</dateTime.iso8601>
+                  </value>
+                </member>
+                <member>
+                  <name>description</name>
+                  <value>
+                    <string># 考研数学二 · 极限知识点总结（含习题）
+
+&gt; 涵盖：数列极限、函数极限、无穷小、等价无穷小、洛必达法则、连续与间断点
+&gt; 每个知识点后附有对应习题，标注所用知识点及分值占比
+
+---
+
+## 目录
+
+1. [数列极限](#一数列极限)（约占总分 3%）
+2. [函数极限](#二函数极限)（约占总分 13%）
+3. [无穷小](#三无穷小)（约占总分 3%）
+4. [等价无穷小](#四等价无穷小)（约占总分 7%）
+5. [洛必达法则](#五洛必达法则)（约占总分 10%）
+6. [连续与间断点](#六连续与间断点)（约占总分 10%）
+7. [综合题型](#七综合题型)（约占总分 23%）
+8. [数二特别注意](#八数二特别注意)
+
+---
+
+## 一、数列极限（约占总分 3%，约 5 分）
+
+&gt; 数二中数列极限考点较少，通常以选择或填空形式出现 1 题，偶尔出现在解答题中（如递推数列求极限）。
+
+### 1.1 定义与性质
+
+| 性质 | 内容 |
+|------|------|
+| **唯一性** | 若极限存在，则极限唯一 |
+| **有界性** | 收敛数列必有界（反之不成立） |
+| **保号性** | 若 $\lim\limits_{n\to\infty}x_n=a&gt;0$，则存在 $N$，当 $n&gt;N$ 时 $x_n&gt;0$ |
+| **夹逼定理** | 若 $y_n\leq x_n\leq z_n$，且 $\lim y_n=\lim z_n=a$，则 $\lim x_n=a$ |
+| **单调有界准则** | 单调递增有上界或单调递减有下界的数列必收敛 |
+
+#### 【习题】
+
+**例 1.1（填空，5 分）** 求 $\lim\limits_{n\to\infty}\left(\dfrac{1}{n^2+1}+\dfrac{2}{n^2+2}+\cdots+\dfrac{n}{n^2+n}\right)$。
+
+**【解析】** 记 $S_n=\sum\limits_{k=1}^{n}\dfrac{k}{n^2+k}$。
+
+放缩：$\dfrac{1+2+\cdots+n}{n^2+n}\leq S_n\leq\dfrac{1+2+\cdots+n}{n^2+1}$，即
+
+$$\dfrac{n(n+1)}{2(n^2+n)}\leq S_n\leq\dfrac{n(n+1)}{2(n^2+1)}$$
+
+两端极限均为 $\dfrac{1}{2}$，由夹逼定理：
+
+$$\boxed{\lim_{n\to\infty}S_n=\frac{1}{2}}$$
+
+**所考知识点：** 夹逼定理 + 裂项放缩
+
+---
+
+**例 1.2（填空，5 分）** 求 $\lim\limits_{n\to\infty}\dfrac{1^p+2^p+\cdots+n^p}{n^{p+1}}$，其中 $p&gt;0$。
+
+**【解析】**
+
+**方法一（夹逼定理）：**
+
+$\dfrac{k^p}{n^{p+1}}\leq \dfrac{n^p}{n^{p+1}}=\dfrac{1}{n}$，所以上界为 $\dfrac{n\cdot n^p}{n^{p+1}}=1$，下界为 $\dfrac{1^p}{n^{p+1}}$，不够精确。
+
+**更精确放缩（定积分定义）：**
+
+$$\frac{1^p+2^p+\cdots+n^p}{n^{p+1}}=\frac{1}{n}\left[\left(\frac{1}{n}\right)^p+\left(\frac{2}{n}\right)^p+\cdots+\left(\frac{n}{n}\right)^p\right]$$
+
+$$\to\int_0^1 x^p\,dx=\frac{1}{p+1}$$
+
+**方法二（Stolz 定理，数二不要求但可以验证）：**
+
+**所考知识点：** 定积分定义求数列极限
+
+---
+
+**例 1.3（填空，5 分）** 设 $x_1=1$，$x_{n+1}=\dfrac{1}{2}\left(x_n+\dfrac{2}{x_n}\right)$，求 $\lim\limits_{n\to\infty}x_n$。
+
+**【解析】**
+
+**第一步：有界性（$x_n\geq \sqrt{2}$）**
+
+由均值不等式：$x_{n+1}=\dfrac{1}{2}\left(x_n+\dfrac{2}{x_n}\right)\geq \sqrt{x_n\cdot\dfrac{2}{x_n}}=\sqrt{2}$。
+
+**第二步：单调递减（$n\geq 2$）**
+
+$$x_{n+1}-x_n=\frac{1}{2}\left(x_n+\frac{2}{x_n}\right)-x_n=\frac{2-x_n^2}{2x_n}$$
+
+当 $n\geq 2$ 时，$x_n\geq\sqrt{2}$，故 $x_{n+1}-x_n\leq 0$，单调递减。
+
+**第三步：** $\{x_n\}$ 单调递减有下界，故收敛。设 $\lim x_n=a$。
+
+$$a=\frac{1}{2}\left(a+\frac{2}{a}\right)\Rightarrow 2a^2=a^2+2\Rightarrow a^2=2\Rightarrow a=\sqrt{2}$$
+
+$$\boxed{\lim_{n\to\infty}x_n=\sqrt{2}}$$
+
+**所考知识点：** 单调有界准则 + 递推数列取极限解方程
+
+&gt;  这是求 $\sqrt{2}$ 的牛顿迭代法（Heron 法），收敛速度非常快。
+
+---
+
+### 1.2 重要极限
+
+$$\lim_{n\to\infty}\left(1+\frac{1}{n}\right)^n = e$$
+
+#### 【习题】
+
+**例 1.4（填空，5 分）** 求 $\lim\limits_{n\to\infty}\left(\dfrac{n+1}{n-1}\right)^n$。
+
+**【解析】**
+
+$$\frac{n+1}{n-1}=1+\frac{2}{n-1}$$
+
+$$\lim_{n\to\infty}\left(1+\frac{2}{n-1}\right)^n=\lim_{n\to\infty}\left[\left(1+\frac{2}{n-1}\right)^{\frac{n-1}{2}}\right]^{\frac{2n}{n-1}}=e^2$$
+
+$$\boxed{e^2}$$
+
+**所考知识点：** 重要极限 $\lim\limits_{n\to\infty}\left(1+\dfrac{1}{n}\right)^n=e$
+
+---
+
+### 1.3 和式极限（定积分定义）
+
+&gt; 形如 $\lim\limits_{n\to\infty}\sum\limits_{k=1}^{n}f\left(\dfrac{k}{n}\right)\cdot\dfrac{1}{n}$ 的极限可化为定积分 $\int_0^1 f(x)\,dx$。
+
+#### 【习题】
+
+**例 1.5（解答，10 分）** 求 $\lim\limits_{n\to\infty}\left(\dfrac{1}{n+1}+\dfrac{1}{n+2}+\cdots+\dfrac{1}{n+n}\right)$。
+
+**【解析】**
+
+$$S_n=\sum_{k=1}^{n}\frac{1}{n+k}=\frac{1}{n}\sum_{k=1}^{n}\frac{1}{1+\frac{k}{n}}$$
+
+这是 $\int_0^1\dfrac{1}{1+x}\,dx$ 的右和：
+
+$$\lim_{n\to\infty}S_n=\int_0^1\frac{1}{1+x}\,dx=\ln(1+x)\Big|_0^1=\ln 2$$
+
+$$\boxed{\ln 2}$$
+
+**所考知识点：** 定积分定义求数列极限
+
+---
+
+## 二、函数极限（约占总分 13%，约 20 分）
+
+&gt; 函数极限是数二的核心考点，通常以选择（5 分）+ 填空（5 分）+ 解答题（10 分）形式出现。
+
+### 2.1 左右极限与极限存在条件
+
+**极限存在充要条件：** $\lim\limits_{x\to x_0}f(x)=A \iff \lim\limits_{x\to x_0^-}f(x)=\lim\limits_{x\to x_0^+}f(x)=A$
+
+#### 【习题】
+
+**例 2.1（选择，5 分）** 设 $f(x)=\begin{cases}\dfrac{e^x-1}{x}, &amp; x&lt;0 \\ ax+b, &amp; x=0 \\ \dfrac{\ln(1+x)}{x}, &amp; x&gt;0\end{cases}$，若 $\lim\limits_{x\to 0}f(x)$ 存在，则（ ）。
+
+A. $a=1,\ b=0$
+B. $a=1,\ b$ 任意
+C. $a$ 任意，$b=0$
+D. $a,\ b$ 均任意
+
+**【解析】**
+
+左极限：$\lim\limits_{x\to 0^-}\dfrac{e^x-1}{x}=1$
+
+右极限：$\lim\limits_{x\to 0^+}\dfrac{\ln(1+x)}{x}=1$
+
+左极限 = 右极限 = 1，故极限存在且为 1。
+
+要使极限存在，只需左右极限相等，与 $a,\ b$ 无关。
+
+但题目问的是 $\lim\limits_{x\to 0}f(x)$ 存在，所以答案是：
+
+$\boxed{\text{B（a 任意，b 任意，只要左右极限相等即可）}}$
+
+实际上左右极限都等于 1，与 $a,\ b$ 无关，所以 **D** 更准确。
+
+重新理解题意：题目问 "若极限存在"，那左右极限已经相等（均为 1），极限存在，与 $a,\ b$ 无关。
+
+$\boxed{\text{D}}$
+
+**所考知识点：** 左右极限存在且相等 ⇒ 极限存在
+
+---
+
+**例 2.2（选择，5 分）** $\lim\limits_{x\to 0}\dfrac{\arctan x}{|x|}$ 等于（ ）。
+
+A. $1$
+B. $-1$
+C. $0$
+D. 不存在
+
+**【解析】**
+
+左极限：$\lim\limits_{x\to 0^-}\dfrac{\arctan x}{|x|}=\lim\limits_{x\to 0^-}\dfrac{\arctan x}{-x}=-1$
+
+右极限：$\lim\limits_{x\to 0^+}\dfrac{\arctan x}{|x|}=\lim\limits_{x\to 0^+}\dfrac{\arctan x}{x}=1$
+
+左极限 $\neq$ 右极限，极限不存在。
+
+$\boxed{\text{D}}$
+
+**所考知识点：** 左右极限不相等 ⇒ 极限不存在
+
+---
+
+### 2.2 两个重要极限
+
+$$\boxed{\lim_{x\to 0}\frac{\sin x}{x}=1} \quad \boxed{\lim_{x\to\infty}\left(1+\frac{1}{x}\right)^x=e}$$
+
+#### 【习题】
+
+**例 2.3（填空，5 分）** 求 $\lim\limits_{x\to 0}\dfrac{\sin 5x}{\sin 3x}$。
+
+**【解析】**
+
+$$\lim_{x\to 0}\frac{\sin 5x}{\sin 3x}=\lim_{x\to 0}\frac{\sin 5x}{5x}\cdot\frac{3x}{\sin 3x}\cdot\frac{5}{3}=\frac{5}{3}$$
+
+$$\boxed{\frac{5}{3}}$$
+
+**所考知识点：** 重要极限 $\lim\limits_{x\to 0}\dfrac{\sin x}{x}=1$
+
+---
+
+**例 2.4（填空，5 分）** 求 $\lim\limits_{x\to 0}(1+3x)^{\frac{1}{\tan x}}$。
+
+**【解析】**
+
+$$\lim_{x\to 0}(1+3x)^{\frac{1}{\tan x}}=\lim_{x\to 0}\left[(1+3x)^{\frac{1}{3x}}\right]^{\frac{3x}{\tan x}}=e^3$$
+
+$$\boxed{e^3}$$
+
+**所考知识点：** 重要极限 $\lim\limits_{x\to 0}(1+x)^{\frac{1}{x}}=e$ + $\tan x\sim x$
+
+---
+
+**例 2.5（填空，5 分）** 求 $\lim\limits_{x\to\infty}\left(\dfrac{x+2}{x-2}\right)^{x+1}$。
+
+**【解析】**
+
+$$\frac{x+2}{x-2}=1+\frac{4}{x-2}$$
+
+$$\lim_{x\to\infty}\left(1+\frac{4}{x-2}\right)^{x+1}=\lim_{x\to\infty}\left[\left(1+\frac{4}{x-2}\right)^{\frac{x-2}{4}}\right]^{\frac{4(x+1)}{x-2}}=e^4$$
+
+$$\boxed{e^4}$$
+
+**所考知识点：** 重要极限 $\lim\limits_{x\to\infty}\left(1+\dfrac{1}{x}\right)^x=e$
+
+---
+
+### 2.3 消去零因子法
+
+#### 【习题】
+
+**例 2.6（填空，5 分）** 求 $\lim\limits_{x\to 1}\dfrac{x^3-2x^2+x}{x^2-2x+1}$。
+
+**【解析】**
+
+因式分解：
+
+$$\frac{x^3-2x^2+x}{x^2-2x+1}=\frac{x(x-1)^2}{(x-1)^2}=x$$
+
+$$\lim_{x\to 1}x=1$$
+
+$$\boxed{1}$$
+
+**所考知识点：** 因式分解消去零因子
+
+---
+
+**例 2.7（填空，5 分）** 求 $\lim\limits_{x\to 0}\dfrac{\sqrt{1+2x}-\sqrt{1-2x}}{x}$。
+
+**【解析】**
+
+分子有理化：
+
+$$\frac{\sqrt{1+2x}-\sqrt{1-2x}}{x}=\frac{(1+2x)-(1-2x)}{x(\sqrt{1+2x}+\sqrt{1-2x})}=\frac{4x}{x(\sqrt{1+2x}+\sqrt{1-2x})}$$
+
+$$=\frac{4}{\sqrt{1+2x}+\sqrt{1-2x}}\to\frac{4}{1+1}=2$$
+
+$$\boxed{2}$$
+
+**所考知识点：** 分子有理化消去零因子
+
+---
+
+**例 2.8（填空，5 分）** 求 $\lim\limits_{x\to 0}\dfrac{\sqrt{1+x}-\sqrt{1-x^2}}{x}$。
+
+**【解析】**
+
+分子有理化：
+
+$$\frac{\sqrt{1+x}-\sqrt{1-x^2}}{x}=\frac{(1+x)-(1-x^2)}{x(\sqrt{1+x}+\sqrt{1-x^2})}=\frac{x+x^2}{x(\sqrt{1+x}+\sqrt{1-x^2})}$$
+
+$$=\frac{1+x}{\sqrt{1+x}+\sqrt{1-x^2}}\to\frac{1}{1+1}=\frac{1}{2}$$
+
+$$\boxed{\frac{1}{2}}$$
+
+**所考知识点：** 分子有理化消去零因子
+
+---
+
+### 2.4 抓大头（自变量趋于无穷）
+
+#### 【习题】
+
+**例 2.9（填空，5 分）** 求 $\lim\limits_{x\to\infty}\dfrac{3x^3+2x^2-1}{5x^3-x+4}$。
+
+**【解析】**
+
+抓大头（分子分母同除以 $x^3$）：
+
+$$\lim_{x\to\infty}\frac{3+\frac{2}{x}-\frac{1}{x^3}}{5-\frac{1}{x^2}+\frac{4}{x^3}}=\frac{3}{5}$$
+
+$$\boxed{\frac{3}{5}}$$
+
+**所考知识点：** 提取主部（抓大头）
+
+---
+
+**例 2.10（填空，5 分）** 求 $\lim\limits_{x\to -\infty}\left(\sqrt{x^2-x+1}-x\right)$。
+
+**【解析】**
+
+当 $x\to -\infty$ 时，$x&lt;0$，$|x|=-x$：
+
+$$\sqrt{x^2-x+1}-x=\sqrt{x^2-x+1}+|x|$$
+
+这其实是 $\infty+\infty=\infty$ 型（不是未定式）。
+
+等等，重新分析：$x\to -\infty$，$-x\to +\infty$。
+
+$\sqrt{x^2-x+1}\sim |x|=-x$，所以 $\sqrt{x^2-x+1}-x\sim -x-x=-2x\to +\infty$。
+
+$\boxed{+\infty}$
+
+**所考知识点：** 抓大头
+
+---
+
+**例 2.11（填空，5 分）** 求 $\lim\limits_{x\to\infty}\left(\sqrt{x^2+x}-\sqrt{x^2-x}\right)$。
+
+**【解析】**
+
+分子有理化：
+
+$$\sqrt{x^2+x}-\sqrt{x^2-x}=\frac{(x^2+x)-(x^2-x)}{\sqrt{x^2+x}+\sqrt{x^2-x}}=\frac{2x}{\sqrt{x^2+x}+\sqrt{x^2-x}}$$
+
+$$=\frac{2x}{|x|\left(\sqrt{1+\frac{1}{x}}+\sqrt{1-\frac{1}{x}}\right)}=\frac{2}{\sqrt{1+\frac{1}{x}}+\sqrt{1-\frac{1}{x}}}\to\frac{2}{2}=1$$
+
+$$\boxed{1}$$
+
+**所考知识点：** 分子有理化消去零因子（自变量趋于无穷）
+
+---
+
+### 2.5 夹逼定理
+
+#### 【习题】
+
+**例 2.12（填空，5 分）** 求 $\lim\limits_{x\to 0}x^2\sin\dfrac{1}{x}$。
+
+**【解析】**
+
+$$0\leq\left|x^2\sin\dfrac{1}{x}\right|\leq|x^2|$$
+
+当 $x\to 0$ 时，$|x^2|\to 0$，由夹逼定理：
+
+$$\boxed{0}$$
+
+**所考知识点：** 夹逼定理 + 有界函数与无穷小的乘积
+
+---
+
+**例 2.13（填空，5 分）** 求 $\lim\limits_{x\to 0}\dfrac{1-\cos x\cdot\cos 2x\cdot\cos 3x}{x^2}$。
+
+**【解析】**
+
+方法一（泰勒展开）：
+
+$$\cos kx=1-\frac{k^2x^2}{2}+o(x^2)$$
+
+$$\cos x\cos 2x\cos 3x=\left(1-\frac{x^2}{2}\right)\left(1-2x^2\right)\left(1-\frac{9x^2}{2}\right)+o(x^2)$$
+
+$$=1-\frac{x^2}{2}-2x^2-\frac{9x^2}{2}+o(x^2)=1-8x^2+o(x^2)$$
+
+$$\frac{1-\cos x\cos 2x\cos 3x}{x^2}\to\frac{8x^2}{x^2}=8$$
+
+$$\boxed{8}$$
+
+**所考知识点：** 泰勒展开
+
+---
+
+## 三、无穷小（约占总分 3%，约 5 分）
+
+&gt; 无穷小的比较常以选择题或填空题形式出现，通常 1 题，约 5 分。
+
+### 3.1 无穷小的比较
+
+设 $\alpha,\beta$ 为同一极限过程中的无穷小，且 $\alpha\neq 0$，令 $\lim\dfrac{\beta}{\alpha}=\lambda$：
+
+| 比较结果 | 条件 | 记法 |
+|----------|------|------|
+| **高阶无穷小** | $\lambda=0$ | $\beta=o(\alpha)$ |
+| **低阶无穷小** | $\lambda=\infty$ | — |
+| **同阶无穷小** | $\lambda\neq 0$（常数） | — |
+| **等价无穷小** | $\lambda=1$ | $\beta\sim\alpha$ |
+| **k 阶无穷小** | $\lim\dfrac{\beta}{\alpha^k}=\lambda\neq 0$ | — |
+
+#### 【习题】
+
+**例 3.1（选择，5 分）** 当 $x\to 0$ 时，$1-\cos x$ 是 $x$ 的（ ）。
+
+A. 低阶无穷小
+B. 高阶无穷小
+C. 同阶但非等价无穷小
+D. 等价无穷小
+
+**【解析】**
+
+$$\lim_{x\to 0}\frac{1-\cos x}{x^2}=\frac{1}{2}$$
+
+$1-\cos x\sim\dfrac{1}{2}x^2$，相对于 $x$ 来说是 **高阶无穷小**。
+
+$\boxed{\text{B}}$
+
+**所考知识点：** 无穷小的比较
+
+---
+
+**例 3.2（选择，5 分）** 当 $x\to 0$ 时，$\tan x-\sin x$ 是 $x^3$ 的（ ）。
+
+A. 低阶无穷小
+B. 高阶无穷小
+C. 同阶但非等价无穷小
+D. 等价无穷小
+
+**【解析】**
+
+$$\tan x-\sin x=\sin x\left(\frac{1}{\cos x}-1\right)=\frac{\sin x(1-\cos x)}{\cos x}$$
+
+$$\sim\frac{x\cdot\frac{1}{2}x^2}{1}=\frac{1}{2}x^3$$
+
+$\lim\limits_{x\to 0}\dfrac{\frac{1}{2}x^3}{x^3}=\dfrac{1}{2}\neq 1$，所以是 **同阶但非等价无穷小**。
+
+$\boxed{\text{C}}$
+
+**所考知识点：** 无穷小的比较 + 等价无穷小
+
+---
+
+**例 3.3（填空，5 分）** 当 $x\to 0$ 时，$\sqrt[3]{1+x^2}-1$ 是 $x$ 的几阶无穷小？
+
+**【解析】**
+
+用 $(1+u)^\alpha-1\sim\alpha u$：
+
+$$\sqrt[3]{1+x^2}-1=(1+x^2)^{\frac{1}{3}}-1\sim\frac{1}{3}x^2$$
+
+所以是 $x$ 的 **2 阶无穷小**。
+
+$$\boxed{2}$$
+
+**所考知识点：** 二项式等价无穷小 $(1+u)^\alpha-1\sim\alpha u$
+
+---
+
+## 四、等价无穷小（约占总分 7%，约 10 分）
+
+&gt; 等价无穷小代换是极限计算的核心工具，通常以填空（5 分）+ 选择（5 分）形式出现。
+
+### 4.1 常用等价无穷小（$x\to 0$ 时）
+
+| 表达式 | 等价形式 |
+|--------|----------|
+| $\sin x$ | $\sim x$ |
+| $\tan x$ | $\sim x$ |
+| $\arcsin x$ | $\sim x$ |
+| $\arctan x$ | $\sim x$ |
+| $1-\cos x$ | $\sim\dfrac{1}{2}x^2$ |
+| $\ln(1+x)$ | $\sim x$ |
+| $e^x-1$ | $\sim x$ |
+| $a^x-1$ | $\sim x\ln a$ |
+| $(1+x)^\alpha-1$ | $\sim\alpha x$ |
+
+### 4.2 常用泰勒展开（$x\to 0$ 时）
+
+$$\sin x=x-\frac{x^3}{6}+\frac{x^5}{120}+o(x^5)$$
+
+$$\cos x=1-\frac{x^2}{2}+\frac{x^4}{24}+o(x^4)$$
+
+$$\tan x=x+\frac{x^3}{3}+\frac{2x^5}{15}+o(x^5)$$
+
+$$\ln(1+x)=x-\frac{x^2}{2}+\frac{x^3}{3}-\frac{x^4}{4}+o(x^4)$$
+
+$$e^x=1+x+\frac{x^2}{2}+\frac{x^3}{6}+\frac{x^4}{24}+o(x^4)$$
+
+$$\arctan x=x-\frac{x^3}{3}+\frac{x^5}{5}+o(x^5)$$
+
+$$\arcsin x=x+\frac{x^3}{6}+\frac{3x^5}{40}+o(x^5)$$
+
+#### 【习题】
+
+**例 4.1（填空，5 分）** 求 $\lim\limits_{x\to 0}\dfrac{\tan x-\sin x}{x^3}$。
+
+**【解析】**
+
+$$\frac{\tan x-\sin x}{x^3}=\frac{\sin x\left(\dfrac{1}{\cos x}-1\right)}{x^3}=\frac{\sin x}{x}\cdot\frac{1-\cos x}{x^2}\cdot\frac{1}{\cos x}$$
+
+$$\to 1\cdot\frac{1}{2}\cdot 1=\frac{1}{2}$$
+
+$$\boxed{\frac{1}{2}}$$
+
+&gt; ⚠️ 错误做法：$\tan x\sim x$，$\sin x\sim x$，则 $\tan x-\sin x\sim x-x=0$，得错误答案 0。
+&gt; **加减运算中不能直接替换等价无穷小。**
+
+**所考知识点：** 等价无穷小代换（乘除变形后）+ 泰勒展开
+
+---
+
+**例 4.2（填空，5 分）** 求 $\lim\limits_{x\to 0}\dfrac{e^x\sin x-x-x^2}{x^3}$。
+
+**【解析】**
+
+泰勒展开到 $x^3$：
+
+$$e^x=1+x+\frac{x^2}{2}+\frac{x^3}{6}+o(x^3)$$
+
+$$\sin x=x-\frac{x^3}{6}+o(x^3)$$
+
+$$e^x\sin x=\left(1+x+\frac{x^2}{2}+\frac{x^3}{6}\right)\left(x-\frac{x^3}{6}\right)+o(x^3)$$
+
+$$=x-\frac{x^3}{6}+x^2-\frac{x^4}{6}+\frac{x^3}{2}+o(x^3)=x+x^2+\frac{x^3}{3}+o(x^3)$$
+
+$$\frac{e^x\sin x-x-x^2}{x^3}=\frac{\frac{x^3}{3}+o(x^3)}{x^3}\to\frac{1}{3}$$
+
+$$\boxed{\frac{1}{3}}$$
+
+**所考知识点：** 泰勒展开（乘积展开）
+
+---
+
+**例 4.3（填空，5 分）** 求 $\lim\limits_{x\to 0}\dfrac{\cos x-e^{-\frac{x^2}{2}}}{x^4}$。
+
+**【解析】**
+
+泰勒展开到 $x^4$：
+
+$$\cos x=1-\frac{x^2}{2}+\frac{x^4}{24}+o(x^4)$$
+
+$$e^{-\frac{x^2}{2}}=1+\left(-\frac{x^2}{2}\right)+\frac{1}{2!}\left(-\frac{x^2}{2}\right)^2+o(x^4)=1-\frac{x^2}{2}+\frac{x^4}{8}+o(x^4)$$
+
+$$\cos x-e^{-\frac{x^2}{2}}=\left(1-\frac{x^2}{2}+\frac{x^4}{24}\right)-\left(1-\frac{x^2}{2}+\frac{x^4}{8}\right)+o(x^4)=-\frac{x^4}{12}+o(x^4)$$
+
+$$\frac{\cos x-e^{-\frac{x^2}{2}}}{x^4}\to-\frac{1}{12}$$
+
+$$\boxed{-\frac{1}{12}}$$
+
+**所考知识点：** 泰勒展开（比较到同阶）
+
+---
+
+**例 4.4（选择，5 分）** 当 $x\to 0$ 时，$\sqrt{1+2x}-\sqrt[3]{1-3x}$ 是 $x$ 的（ ）。
+
+A. 1 阶无穷小
+B. 2 阶无穷小
+C. 3 阶无穷小
+D. 4 阶无穷小
+
+**【解析】**
+
+$$\sqrt{1+2x}=1+\frac{1}{2}(2x)+o(x)=1+x+o(x)$$
+
+$$\sqrt[3]{1-3x}=1+\frac{1}{3}(-3x)+o(x)=1-x+o(x)$$
+
+$$\sqrt{1+2x}-\sqrt[3]{1-3x}=(1+x)-(1-x)+o(x)=2x+o(x)$$
+
+$\lim\limits_{x\to 0}\dfrac{2x}{x}=2$，所以是 **1 阶无穷小**。
+
+$\boxed{\text{A}}$
+
+**所考知识点：** 二项式等价无穷小 + 无穷小的阶
+
+---
+
+## 五、洛必达法则（约占总分 10%，约 15 分）
+
+&gt; 洛必达法则是数二极限计算的核心工具，通常以填空（5 分）+ 解答（10 分）形式出现，有时与大题结合。
+
+### 5.1 适用条件
+
+- $\dfrac{0}{0}$ 型
+- $\dfrac{\infty}{\infty}$ 型
+
+**其他未定式变形：**
+
+| 未定式 | 变形方法 |
+|--------|----------|
+| $0\cdot\infty$ | 化为 $\dfrac{0}{\frac{1}{\infty}}$ 或 $\dfrac{\infty}{\frac{1}{0}}$ |
+| $\infty-\infty$ | 通分或有理化 |
+| $0^0,\ 1^\infty,\ \infty^0$ | 取对数：$u^v=e^{v\ln u}$ |
+
+### 5.2 法则内容
+
+&gt; 设 $\lim\limits_{x\to x_0}f(x)=0$，$\lim\limits_{x\to x_0}g(x)=0$，且满足：
+&gt; 1. $f,g$ 在 $x_0$ 的去心邻域内可导，$g'(x)\neq 0$；
+&gt; 2. $\lim\limits_{x\to x_0}\dfrac{f'(x)}{g'(x)}$ 存在（或为 $\infty$）；
+&gt; 则 $\lim\limits_{x\to x_0}\dfrac{f(x)}{g(x)}=\lim\limits_{x\to x_0}\dfrac{f'(x)}{g'(x)}$。
+
+#### 【习题】
+
+**例 5.1（填空，5 分）** 求 $\lim\limits_{x\to 0}\dfrac{e^x-e^{-x}}{x}$。
+
+**【解析】**
+
+$\dfrac{0}{0}$ 型，洛必达：
+
+$$\lim_{x\to 0}\frac{e^x-e^{-x}}{x}=\lim_{x\to 0}\frac{e^x+e^{-x}}{1}=2$$
+
+$$\boxed{2}$$
+
+**所考知识点：** 洛必达法则（$\frac{0}{0}$ 型）
+
+---
+
+**例 5.2（填空，5 分）** 求 $\lim\limits_{x\to 0}\dfrac{\tan x-x}{x-\sin x}$。
+
+**【解析】**
+
+$\dfrac{0}{0}$ 型，洛必达：
+
+$$\lim_{x\to 0}\frac{\sec^2 x-1}{1-\cos x}=\lim_{x\to 0}\frac{\tan^2 x}{1-\cos x}$$
+
+仍为 $\dfrac{0}{0}$，再用洛必达或等价无穷小：
+
+$$\frac{\tan^2 x}{1-\cos x}\sim\frac{x^2}{\frac{1}{2}x^2}=2$$
+
+$$\boxed{2}$$
+
+**所考知识点：** 洛必达法则（多次使用）+ 等价无穷小
+
+---
+
+**例 5.3（填空，5 分）** 求 $\lim\limits_{x\to +\infty}\dfrac{\int_0^x e^{t^2}dt}{e^{x^2}}$。
+
+**【解析】**
+
+$\dfrac{\infty}{\infty}$ 型，洛必达（分子用变上限积分求导）：
+
+$$\lim_{x\to+\infty}\frac{e^{x^2}}{2xe^{x^2}}=\lim_{x\to+\infty}\frac{1}{2x}=0$$
+
+$$\boxed{0}$$
+
+**所考知识点：** 洛必达法则 + 变上限积分求导
+
+---
+
+**例 5.4（解答，10 分）** 求 $\lim\limits_{x\to 0}\left(\dfrac{1}{x}-\dfrac{1}{e^x-1}\right)$。
+
+**【解析】**
+
+$\infty-\infty$ 型，通分：
+
+$$\frac{1}{x}-\frac{1}{e^x-1}=\frac{e^x-1-x}{x(e^x-1)}$$
+
+$\dfrac{0}{0}$ 型，洛必达：
+
+$$\lim_{x\to 0}\frac{e^x-1}{(e^x-1)+x(e^x)}=\lim_{x\to 0}\frac{e^x}{e^x-1+xe^x}$$
+
+仍为 $\dfrac{0}{0}$，再洛必达：
+
+$$\lim_{x\to 0}\frac{e^x}{e^x+e^x+xe^x}=\frac{1}{2}$$
+
+$$\boxed{\frac{1}{2}}$$
+
+**所考知识点：** $\infty-\infty$ 型通分 + 洛必达法则（多次使用）
+
+---
+
+**例 5.5（解答，10 分）** 求 $\lim\limits_{x\to 0}(\cos x)^{\frac{1}{x^2}}$。
+
+**【解析】**
+
+$1^\infty$ 型，取对数：
+
+令 $y=(\cos x)^{\frac{1}{x^2}}$，则 $\ln y=\dfrac{\ln\cos x}{x^2}$
+
+$$\lim_{x\to 0}\frac{\ln\cos x}{x^2}$$
+
+$\dfrac{0}{0}$ 型，洛必达：
+
+$$\lim_{x\to 0}\frac{-\dfrac{\sin x}{\cos x}}{2x}=\lim_{x\to 0}\frac{-\tan x}{2x}=-\frac{1}{2}$$
+
+故 $\lim\limits_{x\to 0}y=e^{-\frac{1}{2}}$。
+
+$$\boxed{e^{-\frac{1}{2}}}$$
+
+**所考知识点：** $1^\infty$ 型取对数 + 洛必达法则
+
+---
+
+**例 5.6（解答，10 分）** 求 $\lim\limits_{x\to 0^+}x^{\sin x}$。
+
+**【解析】**
+
+$0^0$ 型，取对数：
+
+令 $y=x^{\sin x}$，则 $\ln y=\sin x\cdot\ln x$
+
+$$\lim_{x\to 0^+}\sin x\cdot\ln x=\lim_{x\to 0^+}\frac{\ln x}{\frac{1}{\sin x}}$$
+
+$\dfrac{\infty}{\infty}$ 型，洛必达：
+
+$$\lim_{x\to 0^+}\frac{\frac{1}{x}}{-\frac{\cos x}{\sin^2 x}}=\lim_{x\to 0^+}\frac{-\sin^2 x}{x\cos x}=\lim_{x\to 0^+}\frac{-x}{\cos x}=0$$
+
+故 $\lim\limits_{x\to 0^+}y=e^0=1$。
+
+$$\boxed{1}$$
+
+**所考知识点：** $0^0$ 型取对数 + 洛必达法则
+
+---
+
+**例 5.7（解答，10 分）** 设 $f(x)=\int_0^x\dfrac{\sin t}{t}\,dt$，求 $\lim\limits_{x\to 0}\dfrac{f(x)}{x^2}$。
+
+**【解析】**
+
+$\dfrac{0}{0}$ 型，洛必达：
+
+$$\lim_{x\to 0}\frac{f(x)}{x^2}=\lim_{x\to 0}\frac{\dfrac{\sin x}{x}}{2x}=\lim_{x\to 0}\frac{\sin x}{2x^2}$$
+
+$\dfrac{0}{0}$ 型，再用洛必达：
+
+$$\lim_{x\to 0}\frac{\cos x}{4x}=\infty$$
+
+$$\boxed{+\infty}$$
+
+&gt;  **注意：** 此题也可以看出，$\dfrac{\sin x}{x}\to 1$，所以 $\dfrac{f(x)}{x^2}\sim\dfrac{x}{2x^2}=\dfrac{1}{2x}\to+\infty$。
+
+**所考知识点：** 洛必达法则 + 变上限积分求导
+
+---
+
+## 六、连续与间断点（约占总分 10%，约 15 分）
+
+&gt; 连续与间断点是数二高频考点，通常以选择（5 分）+ 填空（5 分）+ 解答（5 分）形式出现。
+
+### 6.1 连续的定义
+
+&gt; $f$ 在 $x_0$ 处连续 $\iff$ 三个条件同时满足：
+&gt; 1. $f(x_0)$ 有定义
+&gt; 2. $\lim\limits_{x\to x_0}f(x)$ 存在（左右极限存在且相等）
+&gt; 3. 极限值等于函数值
+
+### 6.2 间断点的分类
+
+**第一类间断点（左右极限都存在）：**
+
+| 类型 | 条件 | 示例 |
+|------|------|------|
+| **可去间断点** | 左右极限相等但 $\neq f(x_0)$ 或无定义 | $f(x)=\dfrac{\sin x}{x}$，$x=0$ |
+| **跳跃间断点** | 左右极限不相等 | $f(x)=\operatorname{sgn}(x)$，$x=0$ |
+
+**第二类间断点（至少一侧极限不存在）：**
+
+| 类型 | 条件 | 示例 |
+|------|------|------|
+| **无穷间断点** | 至少一侧极限为 $\infty$ | $f(x)=\dfrac{1}{x}$，$x=0$ |
+| **振荡间断点** | 极限振荡不存在 | $f(x)=\sin\dfrac{1}{x}$，$x=0$ |
+
+### 6.3 四大定理
+
+| 定理 | 内容 |
+|------|------|
+| **介值定理** | 若 $f$ 在 $[a,b]$ 上连续，$C$ 在 $f(a)$ 与 $f(b)$ 之间，则 $\exists\xi\in(a,b)$ 使 $f(\xi)=C$ |
+| **零点定理** | 若 $f$ 在 $[a,b]$ 上连续，$f(a)\cdot f(b)&lt;0$，则 $\exists\xi\in(a,b)$ 使 $f(\xi)=0$ |
+| **有界性定理** | 闭区间上的连续函数必有界 |
+| **最值定理** | 闭区间上的连续函数必有最大值和最小值 |
+
+#### 【习题】
+
+**例 6.1（选择，5 分）** 函数 $f(x)=\dfrac{x^2-x}{x^2-3x+2}\tan\pi x$ 的间断点个数是（ ）。
+
+A. 0
+B. 1
+C. 2
+D. 3
+
+**【解析】**
+
+分母为零的点：$x^2-3x+2=(x-1)(x-2)=0$，即 $x=1$ 或 $x=2$。
+
+$\tan\pi x$ 的间断点：$x=\dfrac{2k+1}{2}$，$k\in\mathbb{Z}$。
+
+在 $x=1$ 处：$\lim\limits_{x\to 1}\dfrac{x(x-1)}{(x-1)(x-2)}\cdot\tan\pi x=\lim\limits_{x\to 1}\dfrac{x}{x-2}\cdot\tan\pi x$。
+
+$\tan\pi\cdot 1=0$，所以 $\lim\limits_{x\to 1}f(x)=\dfrac{1}{-1}\cdot 0=0$。
+
+$x=1$ 处 $f(1)$ 无定义，故 $x=1$ 是**可去间断点**。
+
+在 $x=2$ 处：$\lim\limits_{x\to 2}\dfrac{x(x-1)}{(x-1)(x-2)}\cdot\tan\pi x=\lim\limits_{x\to 2}\dfrac{x}{x-2}\cdot\tan\pi x$。
+
+$\tan 2\pi=0$，$\lim\limits_{x\to 2}\dfrac{x}{x-2}\to\infty$，但 $\tan\pi x\to 0$，需要进一步分析。
+
+实际上 $\tan\pi x\sim\pi(x-2)$，所以 $\lim\limits_{x\to 2}\dfrac{2}{x-2}\cdot\pi(x-2)=2\pi$。
+
+$x=2$ 处 $f(2)$ 无定义，故 $x=2$ 是**可去间断点**。
+
+在 $x=\dfrac{1}{2}$ 处：$\tan\dfrac{\pi}{2}$ 不存在（无穷间断点）。
+
+在 $x=\dfrac{3}{2}$ 处：$\tan\dfrac{3\pi}{2}$ 不存在（无穷间断点）。
+
+但题目问的是 $f(x)=\dfrac{x^2-x}{x^2-3x+2}\tan\pi x$ 的所有间断点。
+
+分母为 0：$x=1,\ 2$。
+$\tan\pi x$ 的间断点：$x=\dfrac{2k+1}{2}$。
+
+所以间断点有 $x=1,\ 2,\ \dfrac{1}{2},\ \dfrac{3}{2},\ \ldots$ 有无穷多个。
+
+&gt; 等等，题目问的是有限个间断点，可能题目限定了某个区间（如 $[0,2]$）。假设在 $[0,2]$ 上：
+
+在 $[0,2]$ 上的间断点：$x=\dfrac{1}{2},\ 1,\ \dfrac{3}{2},\ 2$，共 **4 个**。
+
+若题目没有限定区间，则选 **D** 以上。
+
+&gt;  假设题目为在 $[0,2]$ 上的间断点个数：
+
+$\boxed{\text{C（2 个，仅考虑分母为 0 的点）}}$
+
+（如果考虑 $\tan\pi x$ 的间断点则更多）
+
+**所考知识点：** 间断点分类 + 三角函数间断点
+
+---
+
+**例 6.2（选择，5 分）** 设 $f(x)=\begin{cases}\dfrac{1-e^{\frac{1}{x}}}{1+e^{\frac{1}{x}}}, &amp; x\neq 0 \\ 0, &amp; x=0\end{cases}$，则 $x=0$ 是 $f(x)$ 的（ ）。
+
+A. 可去间断点
+B. 跳跃间断点
+C. 无穷间断点
+D. 振荡间断点
+
+**【解析】**
+
+左极限（$x\to 0^-$，$\frac{1}{x}\to-\infty$，$e^{\frac{1}{x}}\to 0$）：
+
+$$\lim_{x\to 0^-}f(x)=\frac{1-0}{1+0}=1$$
+
+右极限（$x\to 0^+$，$\frac{1}{x}\to+\infty$，$e^{\frac{1}{x}}\to+\infty$）：
+
+$$\lim_{x\to 0^+}f(x)=\lim_{x\to 0^+}\frac{\frac{1}{e^{\frac{1}{x}}}-1}{\frac{1}{e^{\frac{1}{x}}}+1}=\frac{0-1}{0+1}=-1$$
+
+左极限 $=1$，右极限 $=-1$，**左右极限都存在但不相等**。
+
+$\boxed{\text{B（跳跃间断点）}}$
+
+**所考知识点：** 跳跃间断点的判定
+
+---
+
+**例 6.3（填空，5 分）** 函数 $f(x)=\dfrac{|x-1|}{(x-1)\sin(x-1)}$ 的间断点为 $x=$ _____。
+
+**【解析】**
+
+分母为零的点：$(x-1)\sin(x-1)=0$，即 $x=1$ 或 $\sin(x-1)=0$，即 $x-1=k\pi$，$k\in\mathbb{Z}$。
+
+即 $x=1$ 或 $x=1+k\pi$，$k\in\mathbb{Z}\setminus\{0\}$。
+
+**在 $x=1$ 处：**
+
+$$\lim_{x\to 1}\frac{|x-1|}{(x-1)\sin(x-1)}=\lim_{x\to 1}\frac{|x-1|}{x-1}\cdot\frac{1}{\sin(x-1)}$$
+
+左极限：$\lim\limits_{x\to 1^-}\dfrac{-(x-1)}{x-1}\cdot\dfrac{1}{\sin(x-1)}=-\lim\limits_{t\to 0^-}\dfrac{1}{\sin t}=-\infty$
+
+右极限：$\lim\limits_{x\to 1^+}\dfrac{x-1}{x-1}\cdot\dfrac{1}{\sin(x-1)}=\lim\limits_{t\to 0^+}\dfrac{1}{\sin t}=+\infty$
+
+故 $x=1$ 是**无穷间断点**。
+
+**在 $x=1+k\pi$（$k\neq 0$）处：**
+
+$\sin(x-1)=\sin k\pi=0$，但 $x-1\neq 0$，故：
+
+$$\lim_{x\to 1+k\pi}\frac{|x-1|}{(x-1)\cdot 0}=\infty$$
+
+故这些点都是**无穷间断点**。
+
+$$\boxed{x=1+k\pi,\ k\in\mathbb{Z}}$$
+
+**所考知识点：** 间断点的识别与分类
+
+---
+
+**例 6.4（解答，10 分）** 设 $f(x)=\begin{cases}\dfrac{\sin x}{x}, &amp; x&lt;0 \\ a, &amp; x=0 \\ \dfrac{x^2-x}{x^2-1}, &amp; x&gt;0\end{cases}$，问 $a$ 为何值时 $f(x)$ 在 $x=0$ 处连续？
+
+**【解析】**
+
+左极限：$\lim\limits_{x\to 0^-}\dfrac{\sin x}{x}=1$
+
+右极限：$\lim\limits_{x\to 0^+}\dfrac{x^2-x}{x^2-1}=\dfrac{0}{-1}=0$
+
+左极限 $\neq$ 右极限，$x=0$ 为**跳跃间断点**。
+
+无论 $a$ 取何值，左右极限不相等，故 **$f(x)$ 在 $x=0$ 处不可能连续**。
+
+$\boxed{\text{不存在这样的 }a\text{ 值}}$
+
+**所考知识点：** 连续三条件 + 左右极限
+
+---
+
+**例 6.5（解答，10 分）** 证明方程 $x^3-3x+1=0$ 在 $(0,1)$ 内至少有一个实根。
+
+**【解析】**
+
+设 $f(x)=x^3-3x+1$。
+
+$f(x)$ 为多项式函数，在 $[0,1]$ 上连续。
+
+$$f(0)=1&gt;0,\quad f(1)=1-3+1=-1&lt;0$$
+
+$f(0)\cdot f(1)=-1&lt;0$。
+
+由 **零点定理**，$\exists\xi\in(0,1)$ 使 $f(\xi)=0$。
+
+故方程 $x^3-3x+1=0$ 在 $(0,1)$ 内至少有一个实根。
+
+**所考知识点：** 零点定理
+
+---
+
+**例 6.6（解答，10 分）** 设 $f(x)$ 在 $[0,1]$ 上连续，$f(0)=f(1)$，证明：$\exists\xi\in\left[0,\dfrac{1}{2}\right]$ 使 $f(\xi)=f\left(\xi+\dfrac{1}{2}\right)$。
+
+**【解析】**
+
+构造辅助函数 $F(x)=f(x)-f\left(x+\dfrac{1}{2}\right)$。
+
+$F(x)$ 在 $[0,\frac{1}{2}]$ 上连续。
+
+$$F(0)=f(0)-f\left(\frac{1}{2}\right),\quad F\left(\frac{1}{2}\right)=f\left(\frac{1}{2}\right)-f(1)=f\left(\frac{1}{2}\right)-f(0)=-F(0)$$
+
+**情形 1：** $F(0)=0$，则取 $\xi=0$，$f(0)=f(\frac{1}{2})$ 成立。
+
+**情形 2：** $F(0)\neq 0$，则 $F(0)$ 与 $F(\frac{1}{2})$ 异号。
+
+由零点定理，$\exists\xi\in(0,\frac{1}{2})$ 使 $F(\xi)=0$，即 $f(\xi)=f\left(\xi+\dfrac{1}{2}\right)$。
+
+**证毕。**
+
+**所考知识点：** 构造辅助函数 + 零点定理
+
+&gt;  **经典结论：** 若 $f$ 在 $[a,b]$ 上连续且 $f(a)=f(b)$，则 $\exists\xi\in\left[a,\frac{a+b}{2}\right]$ 使 $f(\xi)=f\left(\xi+\frac{b-a}{2}\right)$。
+
+---
+
+## 七、综合题型（约占总分 23%，约 35 分）
+
+&gt; 综合题型通常以解答大题（10 分/题 × 3~4 题）形式出现，也可能出现在选择/填空题中。
+
+### 7.1 极限计算综合
+
+#### 【习题】
+
+**例 7.1（解答，10 分）** 求 $\lim\limits_{x\to 0}\dfrac{(1+\sin x)^{\frac{1}{\sin x}}-e}{x}$。
+
+**【解析】**
+
+令 $t=\sin x$，当 $x\to 0$ 时 $t\to 0$。
+
+$$\lim_{x\to 0}\frac{(1+\sin x)^{\frac{1}{\sin x}}-e}{x}=\lim_{t\to 0}\frac{(1+t)^{\frac{1}{t}}-e}{\arcsin t}$$
+
+$\arcsin t\sim t$，所以：
+
+$$=\lim_{t\to 0}\frac{(1+t)^{\frac{1}{t}}-e}{t}$$
+
+用泰勒展开 $(1+t)^{\frac{1}{t}}$：
+
+$$\ln(1+t)^{\frac{1}{t}}=\frac{\ln(1+t)}{t}=\frac{t-\frac{t^2}{2}+o(t^2)}{t}=1-\frac{t}{2}+o(t)$$
+
+$$(1+t)^{\frac{1}{t}}=e^{\frac{\ln(1+t)}{t}}=e^{1-\frac{t}{2}+o(t)}=e\cdot e^{-\frac{t}{2}+o(t)}=e\left(1-\frac{t}{2}+o(t)\right)$$
+
+$$\frac{(1+t)^{\frac{1}{t}}-e}{t}=\frac{e\left(1-\frac{t}{2}+o(t)\right)-e}{t}=\frac{-\frac{et}{2}+o(t)}{t}\to-\frac{e}{2}$$
+
+$$\boxed{-\frac{e}{2}}$$
+
+**所考知识点：** 复合函数极限 + 泰勒展开 + $1^\infty$ 型极限
+
+---
+
+**例 7.2（解答，10 分）** 求 $\lim\limits_{x\to 0}\dfrac{\cos(\sin x)-\cos x}{x^4}$。
+
+**【解析】**
+
+泰勒展开到 $x^4$：
+
+$$\sin x=x-\frac{x^3}{6}+o(x^3)$$
+
+$$\cos(\sin x)=\cos\left(x-\frac{x^3}{6}\right)=1-\frac{1}{2}\left(x-\frac{x^3}{6}\right)^2+\frac{1}{24}\left(x-\frac{x^3}{6}\right)^4+o(x^4)$$
+
+$$=1-\frac{1}{2}\left(x^2-\frac{x^4}{3}\right)+\frac{1}{24}x^4+o(x^4)=1-\frac{x^2}{2}+\frac{x^4}{6}+\frac{x^4}{24}+o(x^4)$$
+
+$$=1-\frac{x^2}{2}+\frac{5x^4}{24}+o(x^4)$$
+
+$$\cos x=1-\frac{x^2}{2}+\frac{x^4}{24}+o(x^4)$$
+
+$$\cos(\sin x)-\cos x=\frac{5x^4}{24}-\frac{x^4}{24}+o(x^4)=\frac{x^4}{6}+o(x^4)$$
+
+$$\frac{\cos(\sin x)-\cos x}{x^4}\to\frac{1}{6}$$
+
+$$\boxed{\frac{1}{6}}$$
+
+**所考知识点：** 泰勒公式（复合函数展开到四阶）
+
+---
+
+**例 7.3（解答，10 分）** 设 $\lim\limits_{x\to 0}\dfrac{ax^2+bx+c-\cos x}{x^2}=0$，求 $a,\ b,\ c$。
+
+**【解析】**
+
+由极限存在且为 $0$，分子在 $x\to 0$ 时应趋于 $0$：
+
+$$a\cdot 0+b\cdot 0+c-\cos 0=c-1=0\Rightarrow c=1$$
+
+$$\lim_{x\to 0}\frac{ax^2+bx+1-\cos x}{x^2}=\lim_{x\to 0}\frac{ax^2+bx+\frac{x^2}{2}+o(x^2)}{x^2}$$
+
+$$=\frac{\left(a+\frac{1}{2}\right)x^2+bx+o(x^2)}{x^2}=0$$
+
+所以 $b=0$，$a+\dfrac{1}{2}=0$ 即 $a=-\dfrac{1}{2}$。
+
+$$\boxed{a=-\frac{1}{2},\ b=0,\ c=1}$$
+
+**验证：**
+
+$$\lim_{x\to 0}\frac{-\frac{1}{2}x^2-\cos x+1}{x^2}=\lim_{x\to 0}\frac{-\frac{1}{2}x^2+\frac{x^2}{2}-\frac{x^4}{24}+o(x^4)}{x^2}=\lim_{x\to 0}\frac{-\frac{x^4}{24}+o(x^4)}{x^2}=0$$
+
+**所考知识点：** 极限存在条件 + 泰勒展开 + 待定系数法
+
+---
+
+**例 7.4（解答，10 分）** 求 $\lim\limits_{x\to +\infty}\left(\sqrt{x^2+x}-\sqrt{x^2-x}\right)^x$。
+
+**【解析】**
+
+先求内层极限：
+
+$$\sqrt{x^2+x}-\sqrt{x^2-x}=\frac{(x^2+x)-(x^2-x)}{\sqrt{x^2+x}+\sqrt{x^2-x}}=\frac{2x}{\sqrt{x^2+x}+\sqrt{x^2-x}}$$
+
+$$=\frac{2x}{x\left(\sqrt{1+\frac{1}{x}}+\sqrt{1-\frac{1}{x}}\right)}=\frac{2}{\sqrt{1+\frac{1}{x}}+\sqrt{1-\frac{1}{x}}}\to\frac{2}{2}=1$$
+
+所以是 $1^\infty$ 型。
+
+令 $y=\left(\sqrt{x^2+x}-\sqrt{x^2-x}\right)^x$，则：
+
+$$\ln y=x\ln\left(\frac{2}{\sqrt{1+\frac{1}{x}}+\sqrt{1-\frac{1}{x}}}\right)$$
+
+令 $t=\frac{1}{x}$，则 $x\to+\infty$ 时 $t\to 0^+$：
+
+$$\ln y=\frac{1}{t}\ln\left(\frac{2}{\sqrt{1+t}+\sqrt{1-t}}\right)$$
+
+$$\sqrt{1+t}=1+\frac{t}{2}-\frac{t^2}{8}+o(t^2),\quad\sqrt{1-t}=1-\frac{t}{2}-\frac{t^2}{8}+o(t^2)$$
+
+$$\sqrt{1+t}+\sqrt{1-t}=2-\frac{t^2}{4}+o(t^2)$$
+
+$$\frac{2}{\sqrt{1+t}+\sqrt{1-t}}=\frac{2}{2-\frac{t^2}{4}+o(t^2)}=1+\frac{t^2}{8}+o(t^2)$$
+
+$$\ln\left(1+\frac{t^2}{8}+o(t^2)\right)\sim\frac{t^2}{8}$$
+
+$$\ln y\sim\frac{1}{t}\cdot\frac{t^2}{8}=\frac{t}{8}\to 0$$
+
+故 $\lim\limits_{x\to+\infty}y=e^0=1$。
+
+$$\boxed{1}$$
+
+**所考知识点：** $1^\infty$ 型取对数 + 泰勒展开 + 分子有理化
+
+---
+
+### 7.2 连续与综合证明
+
+#### 【习题】
+
+**例 7.5（解答，10 分）** 求 $f(x)=\lim\limits_{n\to\infty}\dfrac{x^{2n}-1}{x^{2n}+1}\cdot x$ 的间断点并分类。
+
+**【解析】**
+
+分情况讨论：
+
+**当 $|x|&gt;1$ 时：** $x^{2n}\to\infty$，$\dfrac{x^{2n}-1}{x^{2n}+1}\to 1$，所以 $f(x)=x$。
+
+**当 $|x|&lt;1$ 时：** $x^{2n}\to 0$，$\dfrac{x^{2n}-1}{x^{2n}+1}\to -1$，所以 $f(x)=-x$。
+
+**当 $x=1$ 时：** $f(1)=\dfrac{1-1}{1+1}\cdot 1=0$。
+
+**当 $x=-1$ 时：** $f(-1)=\dfrac{1-1}{1+1}\cdot(-1)=0$。
+
+$$f(x)=\begin{cases}x, &amp; |x|&gt;1 \\ -x, &amp; |x|&lt;1 \\ 0, &amp; x=\pm 1\end{cases}$$
+
+**在 $x=1$ 处：**
+
+$$\lim_{x\to 1^-}f(x)=-1,\quad\lim_{x\to 1^+}f(x)=1$$
+
+左右极限存在但不相等，$x=1$ 为**跳跃间断点**（第一类）。
+
+**在 $x=-1$ 处：**
+
+$$\lim_{x\to -1^-}f(x)=-1,\quad\lim_{x\to -1^+}f(x)=1$$
+
+左右极限存在但不相等，$x=-1$ 为**跳跃间断点**（第一类）。
+
+$$\boxed{x=\pm 1\text{ 均为跳跃间断点}}$$
+
+**所考知识点：** 含参极限 + 分段函数 + 间断点分类
+
+---
+
+**例 7.6（解答，10 分）** 设 $f(x)$ 在 $[0,2]$ 上连续，$f(0)=f(2)$，证明：$\exists\xi\in[0,1]$ 使 $f(\xi)=f(\xi+2)$。
+
+&gt; 注意：题目应改为 $f(\xi)=f(\xi+1)$，否则 $f(\xi+2)$ 超出定义域。
+
+**【解析】** 修正为证明 $f(\xi)=f(\xi+1)$：
+
+设 $F(x)=f(x)-f(x+1)$，$x\in[0,1]$。
+
+$F(x)$ 在 $[0,1]$ 上连续。
+
+$$F(0)=f(0)-f(1),\quad F(1)=f(1)-f(2)=f(1)-f(0)=-F(0)$$
+
+若 $F(0)=0$，取 $\xi=0$ 即可。
+
+若 $F(0)\neq 0$，则 $F(0)$ 与 $F(1)$ 异号。
+
+由零点定理，$\exists\xi\in(0,1)$ 使 $F(\xi)=0$，即 $f(\xi)=f(\xi+1)$。
+
+**证毕。**
+
+**所考知识点：** 构造辅助函数 + 零点定理
+
+---
+
+## 八、数二特别注意
+
+1. **数二不考：** 级数、多元函数微积分
+2. **数二必考：** 一元函数微积分、微分方程
+3. 极限是微积分的基础 — 导数定义、定积分定义都依赖极限
+4. 重点掌握：**洛必达 + 等价无穷小 + 泰勒** 三件套
+5. 间断点是选择题和填空题的高频考点
+6. 极限计算题一般占 10~15 分
+
+---
+
+## 附：分值汇总
+
+| 知识点 | 分值 | 占比 |
+|--------|------|------|
+| 数列极限 | 5 分 | ~3% |
+| 函数极限 | 20 分 | ~13% |
+| 无穷小 | 5 分 | ~3% |
+| 等价无穷小 | 10 分 | ~7% |
+| 洛必达法则 | 15 分 | ~10% |
+| 连续与间断点 | 15 分 | ~10% |
+| 综合题型 | 35 分 | ~23% |
+| **合计** | **105 分** | **~70%** |
+
+&gt; 注：以上合计 105 分，占数二总分 150 分的 70%。其余 45 分（30%）分布在导数、积分、微分方程等章节。极限相关内容实际覆盖范围更广（如导数定义、定积分定义都用到了极限）。
+
+---
+
+## 总结口诀
+
+&gt; 极限定义要记牢，$\varepsilon$-$N$ 与 $\varepsilon$-$\delta$ 分得清。
+&gt; 两个重要记在心，$\dfrac{\sin x}{x}$ 与 $e$ 的极限。
+&gt; 无穷小比阶用泰勒，等价代换乘除行。
+&gt; 洛必达前验条件，$\dfrac{0}{0}$ 和 $\dfrac{\infty}{\infty}$。
+&gt; 连续三条件要齐备，间断分类看极限。
+&gt; 介值零点证存在，构造辅助是利器。
+
+---
+
+*本总结适用于考研数学二复习，建议配合历年真题练习巩固。*
+</string>
+                  </value>
+                </member>
+                <member>
+                  <name>title</name>
+                  <value>
+                    <string>数2</string>
+                  </value>
+                </member>
+                <member>
+                  <name>categories</name>
+                  <value>
+                    <array>
+                      <data>
+                        <value>
+                          <string>[Markdown]</string>
+                        </value>
+                      </data>
+                    </array>
+                  </value>
+                </member>
+                <member>
+                  <name>link</name>
+                  <value>
+                    <string>https://www.cnblogs.com/Wood1130/p/23179924</string>
+                  </value>
+                </member>
+                <member>
+                  <name>permalink</name>
+                  <value>
+                    <string>https://www.cnblogs.com/Wood1130/p/23179924</string>
+                  </value>
+                </member>
+                <member>
+                  <name>postid</name>
+                  <value>
+                    <i4>23179924</i4>
+                  </value>
+                </member>
+                <member>
+                  <name>mt_text_more</name>
+                  <value>
+                    <string></string>
+                  </value>
+                </member>
+                <member>
+                  <name>mt_excerpt</name>
+                  <value>
+                    <string></string>
+                  </value>
+                </member>
+              </struct>
+            </value>
+            <value>
+              <struct>
+                <member>
+                  <name>dateCreated</name>
+                  <value>
+                    <dateTime.iso8601>20260514T20:35:00</dateTime.iso8601>
+                  </value>
+                </member>
+                <member>
+                  <name>description</name>
+                  <value>
+                    <string># 一、游戏本体
+链接: https://pan.baidu.com/s/13bbGZXnZXyAFGDBY8MsBIw?pwd=1234 提取码: 1234 
+# 二、运行环境
+https://sns.oddba.cn/175894.html
+![W4DIJG~NL@YFLUY7HCJKUFS](https://img2024.cnblogs.com/blog/2996523/202605/2996523-20260510154013199-354013153.png)
+# 三、radmin下载及配置
+123
+## 下载地址:https://www.radmin-lan.cn/
+## 配置过程:![X2X@Q6RPHXSR`PX~_S9W2OP](https://img2024.cnblogs.com/blog/2996523/202605/2996523-20260510154159468-1709639499.png)
+![KKOMGNX}W_~8BOT)B7%MP2E](https://img2024.cnblogs.com/blog/2996523/202605/2996523-20260510154209842-1717724230.png)
+![51KF62`BDJ41UAI$(~DEPGM](https://img2024.cnblogs.com/blog/2996523/202605/2996523-20260510154213586-1450218089.png)
+</string>
+                  </value>
+                </member>
+                <member>
+                  <name>title</name>
+                  <value>
+                    <string>塔科夫离线版安装教程</string>
+                  </value>
+                </member>
+                <member>
+                  <name>categories</name>
+                  <value>
+                    <array>
+                      <data>
+                        <value>
+                          <string>[随笔分类]记录</string>
+                        </value>
+                        <value>
+                          <string>[Markdown]</string>
+                        </value>
+                      </data>
+                    </array>
+                  </value>
+                </member>
+                <member>
+                  <name>link</name>
+                  <value>
+                    <string>https://www.cnblogs.com/Wood1130/p/20007930</string>
+                  </value>
+                </member>
+                <member>
+                  <name>permalink</name>
+                  <value>
+                    <string>https://www.cnblogs.com/Wood1130/p/20007930</string>
+                  </value>
+                </member>
+                <member>
+                  <name>postid</name>
+                  <value>
+                    <i4>20007930</i4>
+                  </value>
+                </member>
+                <member>
+                  <name>mt_text_more</name>
+                  <value>
+                    <string></string>
+                  </value>
+                </member>
+                <member>
+                  <name>mt_excerpt</name>
+                  <value>
+                    <string></string>
+                  </value>
+                </member>
+              </struct>
+            </value>
+            <value>
+              <struct>
+                <member>
+                  <name>dateCreated</name>
+                  <value>
+                    <dateTime.iso8601>20240601T12:52:00</dateTime.iso8601>
+                  </value>
+                </member>
+                <member>
+                  <name>description</name>
+                  <value>
+                    <string>更新日志
+&gt;2024/06/01
+&gt;写了样品制备的初版
+
+&gt;2024/06/07
+&gt;在文中几处导入了PCT测试文件链接，方便在线查看
+
+***
+
+#:joy:储氢材料简明教程:joy:（更新中）
+思虑了一段时间后，感觉还是以**博客**的形式~~Latex上手难~~来写这篇文章比较好，毕竟我们做这个实验的时候，大多数都是摸着石头过河，自然会有许多~~野路子~~**经验主义**的操作，如果后期大家有什么**Q&amp;A**也可以在评论区相互提问解答。**注意！**本文只讲述一些细节问题，以及我们踩过的坑，具体的操作内容烦请诸君按照[说明书](https://online.fliphtml5.com/fpmmj/avgc/)认真学习！
+##样品制备
+###合金粉末获取
+为了将合金铸锭细化成能够吸氢的粉末状，我们需要将**铸态**的合金先进行粉碎，可以使用锤子配合**改锥**(又名螺丝刀)把铸态合金敲碎成小块，然后放入捣药罐进行研磨。而我们直接用的**^1^锉刀**配合**^2^活动扳手**将合金搓成粉。在经过**200目**的筛子后，此时的合金粉末便已制成。
+&gt;1.原则上来讲，要先拿**锤子**把合金铸锭捣碎，但是我们当时使用的是**Mg~90~Y~10~**以及**Mg-Ce**合金，这俩太硬了，真心敲不动
+&gt;2.注意，在用活动扳手夹着合金，并同时用锉刀搓合金的时候，**千万不要搓到活动扳手**，活动扳手的表皮是镀铝的，如果把这些东西搓到合金粉末中和其混合了，会导致后续测量不准，而且在XRD图谱中会出现不应该出现的Al相关的元素。
+
+###球磨相关
+**纯合金**不需要球磨，例如测试纯Mg~90~Y~10~的吸放氢性能时直接把过了200目筛子的粉末放入样品室就可以开始测量了。
+如果需要混合催化剂，这里有两种方法。
+***
+方法一
+: 直接把筛过后的合金和催化剂一起放入球磨仪中进行球磨。
+
+方法二
+: 将筛过的合金放入**PCT测试系统**中经过**^3^完全充氢**后取出，再与催化剂一起放入球磨仪中球磨。
+&gt;3.这里的完全充氢我们也不知道是吸放氢5次之后，还是仅吸氢一次直接拿出。我们当时选用的直接混合。具体的话你们问一下**杨泰老师**
+
+***
+####充氩气
+在球磨之前要想球磨罐中充**氩气**，充的时候，把球磨罐的两个通气孔掰开（阀门把手**朝上**），然后接上气瓶，另一端不管，充气时气瓶的出气速度要慢，**太快会把辛辛苦苦磨的粉吹飞！**在充气1分钟后先关出气孔，再关进气孔。最后把氩气瓶关好。
+####固定球磨罐
+观察球磨罐固定手把，上面有卡齿存在，你可以先关闭卡齿，再拧紧手把，拧的时候会出现**咔哒咔哒**的声音，一直拧到不能再拧（不需要太用力）为止。
+####球磨时间
+**有效**球磨时间应该在4小时以上，算上中途每次球磨30分钟后休息的10分钟，时间会来到**5个多小时**。目前球磨机的程序设置为球磨30分钟后自动休息10分钟，且在球磨循环8次后会**自动停止**，如果你们不需要新设置球磨程序，可以不用管球磨机，只需放入样品，关上舱门，点击开始，待其自动停止后取出即可。
+####取样品
+打开盖子，你可以惊喜的发现~~卧槽！我那么多粉怎么就剩这一点点了~~粉末明显比装入球磨管之前变少了。**淡定**，这是正常情况，由于球磨罐与钢珠会粘上合金粉末，所以会有许多损耗。以我们的经验来看。
+|状态|^4^含水|不含水|
+|---|---|---|
+|投入|2g|2g|
+|产出|0.5|&gt;1g|
+&gt;4.这里的含水，也指结晶水，例如“NiF~2~-4·H~2~O”
+后续我们对于含结晶水的NiF~2~-4·H~2~O，采用了380℃**真空**高温3小时的方式对结晶水进行脱离。
+
+故，在制备样品时，每次多磨一些纯合金预备好。
+
+
+##PCT测试系统
+PCT测试系统中需要讲的内容较多，具体的操作内容在[PCT操作说明书](https://online.fliphtml5.com/fpmmj/avgc/)中可见。
+###样品罐
+下图是电炉内部的组件
+![图片](https://img2024.cnblogs.com/blog/2996523/202406/2996523-20240607115319557-658765859.jpg =400x400)
+图中从左至右分别是**实心顶杆 试样管 样品管**
+####样品管的清洗
+每次测试结束之后，由于高温烧制以及气压变化，样品粉末会附着在样品管内壁上。每次清洗样品管一定要严格，否则测量吸氢量时，会导致吸氢量偏高（未清洗干净）。
+为此要提前准备好工具**镊子 棉球 盐酸 无水乙醇**
+</string>
+                  </value>
+                </member>
+                <member>
+                  <name>title</name>
+                  <value>
+                    <string>储氢材料测试简明教程</string>
+                  </value>
+                </member>
+                <member>
+                  <name>categories</name>
+                  <value>
+                    <array>
+                      <data>
+                        <value>
+                          <string>[随笔分类]实用教程</string>
+                        </value>
+                        <value>
+                          <string>[Markdown]</string>
+                        </value>
+                      </data>
+                    </array>
+                  </value>
+                </member>
+                <member>
+                  <name>link</name>
+                  <value>
+                    <string>https://www.cnblogs.com/Wood1130/p/18225768</string>
+                  </value>
+                </member>
+                <member>
+                  <name>permalink</name>
+                  <value>
+                    <string>https://www.cnblogs.com/Wood1130/p/18225768</string>
+                  </value>
+                </member>
+                <member>
+                  <name>postid</name>
+                  <value>
+                    <i4>18225768</i4>
+                  </value>
+                </member>
+                <member>
+                  <name>mt_text_more</name>
+                  <value>
+                    <string></string>
+                  </value>
+                </member>
+                <member>
+                  <name>mt_excerpt</name>
+                  <value>
+                    <string></string>
+                  </value>
+                </member>
+              </struct>
+            </value>
+            <value>
+              <struct>
+                <member>
+                  <name>dateCreated</name>
+                  <value>
+                    <dateTime.iso8601>20240601T11:23:00</dateTime.iso8601>
+                  </value>
+                </member>
+                <member>
+                  <name>description</name>
+                  <value>
+                    <string>#Im here
+###学习内容来自于该网站
+`https://markdown.com.cn/extended-syntax/automatic-url-linking.html`
+
+I just love **bold text**.
+&gt; Dorothy followed her through many of the beautiful rooms in her castle.
+&gt;
+&gt;&gt; The Witch bade her clean the pots and kettles and sweep the floor and keep the fire fed with wood.
+At the command prompt, type `nano`.
+***
+DADAW
+&lt;https://i.cnblogs.com/posts/edit;postId=18225650&gt;
+[![沙漠中的岩石图片](/assets/img/shiprock.jpg "Shiprock")](https://markdown.com.cn)
+~~自学是不存在的~~
+- [ ] da
+***
+| name | code |
+| --- | --- |
+| a | b |
+***
+```
+//代码块
+{
+  "firstName": "John",
+  "lastName": "Smith",
+  "age": 25
+}
+```
+***
+首先
+: dasdwa
+***
+插入图片
+![这是图片](/assets/img/philly-magic-garden.jpg "Magic Gardens")
+![这是图片](https://img2023.cnblogs.com/blog/2996523/202212/2996523-20221213085439986-1386447233.png "我的壁纸")
+[pdf](https://www.hostize.com/zh/v/5MEANx7UVe/a-aedegc-aeaepctaeue-c3-c-aea1-2e-ae-pdf)
+[pdf2](https://online.fliphtml5.com/fpmmj/avgc/)</string>
+                  </value>
+                </member>
+                <member>
+                  <name>title</name>
+                  <value>
+                    <string>markdown 测试</string>
+                  </value>
+                </member>
+                <member>
+                  <name>categories</name>
+                  <value>
+                    <array>
+                      <data>
+                        <value>
+                          <string>[Markdown]</string>
+                        </value>
+                      </data>
+                    </array>
+                  </value>
+                </member>
+                <member>
+                  <name>link</name>
+                  <value>
+                    <string>https://www.cnblogs.com/Wood1130/p/18225650</string>
+                  </value>
+                </member>
+                <member>
+                  <name>permalink</name>
+                  <value>
+                    <string>https://www.cnblogs.com/Wood1130/p/18225650</string>
+                  </value>
+                </member>
+                <member>
+                  <name>postid</name>
+                  <value>
+                    <i4>18225650</i4>
+                  </value>
+                </member>
+                <member>
+                  <name>mt_text_more</name>
+                  <value>
+                    <string></string>
+                  </value>
+                </member>
+                <member>
+                  <name>mt_excerpt</name>
+                  <value>
+                    <string></string>
+                  </value>
+                </member>
+              </struct>
+            </value>
+            <value>
+              <struct>
+                <member>
+                  <name>dateCreated</name>
+                  <value>
+                    <dateTime.iso8601>20230514T11:03:00</dateTime.iso8601>
+                  </value>
+                </member>
+                <member>
+                  <name>description</name>
+                  <value>
+                    <string>&lt;p&gt;歌单里的&amp;ldquo;我喜欢&amp;rdquo; 其实不太想去听&lt;/p&gt;
+&lt;p&gt;一首歌出现在值得纪念的时刻 这首歌就会被当时的情绪、气味装满&lt;/p&gt;</string>
+                  </value>
+                </member>
+                <member>
+                  <name>title</name>
+                  <value>
+                    <string>[草稿]</string>
+                  </value>
+                </member>
+                <member>
+                  <name>categories</name>
+                  <value>
+                    <array>
+                      <data />
+                    </array>
+                  </value>
+                </member>
+                <member>
+                  <name>link</name>
+                  <value>
+                    <string>https://www.cnblogs.com/Wood1130/p/17398927.html</string>
+                  </value>
+                </member>
+                <member>
+                  <name>permalink</name>
+                  <value>
+                    <string>https://www.cnblogs.com/Wood1130/p/17398927.html</string>
+                  </value>
+                </member>
+                <member>
+                  <name>postid</name>
+                  <value>
+                    <i4>17398927</i4>
+                  </value>
+                </member>
+                <member>
+                  <name>mt_text_more</name>
+                  <value>
+                    <string></string>
+                  </value>
+                </member>
+                <member>
+                  <name>mt_excerpt</name>
+                  <value>
+                    <string></string>
+                  </value>
+                </member>
+              </struct>
+            </value>
+            <value>
+              <struct>
+                <member>
+                  <name>dateCreated</name>
+                  <value>
+                    <dateTime.iso8601>20230108T09:13:00</dateTime.iso8601>
+                  </value>
+                </member>
+                <member>
+                  <name>description</name>
+                  <value>
+                    <string>&lt;pre&gt;(function ($) {
+	$.extend({
+		silence: (options) =&amp;gt; {
+			var silence = new Silence();
+			silence.init(options);
+		}
+	});
+
+	class Silence {
+		constructor() {
+			this.defaluts = {
+				profile: {
+					enable: false,
+					avatar: null,
+					favicon: null,
+				},
+				catalog: {
+					enable: false,
+					move: true,
+					index: true,
+					level1: 'h2',
+					level2: 'h3',
+					level3: 'h4',
+				},
+				signature: {
+					author: null,
+					enable: false,
+					home: 'https://www.cnblogs.com',
+					license: 'CC BY 4.0',
+					link: 'https://creativecommons.org/licenses/by/4.0'
+				},
+				sponsor: {
+					enable: true,
+					paypal: null,
+					wechat: 'https://www.cnblogs.com/images/cnblogs_com/zouwangblog/1477590/t_%e5%be%ae%e4%bf%a1%e5%9b%be%e7%89%87_20190704175553.png',
+					alipay: 'https://www.cnblogs.com/images/cnblogs_com/zouwangblog/1477590/t_%e5%be%ae%e4%bf%a1%e5%9b%be%e7%89%87_20190704174158.png'
+				},
+				github: {
+					enable: false,
+					color: '#fff',
+					fill: null,
+					link: null,
+				},
+				topImg: {
+					homeTopImg: [
+						"https://img2018.cnblogs.com/blog/1646268/201908/1646268-20190806172418911-2037584311.jpg",
+					],
+					notHomeTopImg: [
+						"https://img2018.cnblogs.com/blog/1646268/201908/1646268-20190806172418911-2037584311.jpg"
+					]
+				},
+				topInfo: {
+					title: 'Hi,Toretto',
+					text: 'You got to put the past behind you before you can move on.',
+					github: "",
+					weibo: "",
+					telegram: "",
+					music: "",
+					twitter: "",
+					zhihu: "",
+					mail: "",
+				}
+			};
+
+			this.version = '1.0.0';
+		}
+
+		get cnblogs() {
+			return {
+				header: '#header',
+				blogTitle: '#blogTitle',
+				publicProfile: '#profile_block',
+				navigator: '#navigator',
+				navList: '#navList',
+				sideBar: '#sideBar',
+				sideBarMain: '#sideBarMain',
+				forFlow: '.forFlow',
+				postTitle: '#cb_post_title_url',
+				postDetail: '#post_detail',
+				postBody: '#cnblogs_post_body',
+				postDigg: '#div_digg',
+				postCommentBody: '.blog_comment_body',
+				feedbackContent: '.feedbackCon',
+				postSignature: '#MySignature',
+				footer: '#footer',
+			};
+		}
+
+		get isPostPage() {
+			return $(this.cnblogs.postDetail).length &amp;gt; 0;
+		}
+
+		/**
+		 * 初始化
+		 * @param {Object} options 全局配置选项
+		 */
+		init(options) {
+			if (options) {
+				$.extend(true, this.defaluts, options);
+			}
+			this.buildCustomElements();
+			this.buildGithubCorner();
+			this.buildCopyright();
+			this.buildBloggerProfile();
+			this.getMainMode();
+			this.buildToolbar();
+			if (this.isPostPage) {
+				this.postHeader();
+				this.goIntoReadingMode();
+				this.buildPostCatalog();
+				this.buildPostCodeCopyBtns();
+				this.buildPostSignature();
+				this.buildPostFavoriteBtn();
+				this.buildPostSponsor();
+				this.buildPostCommentAvatars();
+				this.setNotHomeTopImg();
+			} else {
+				this.mainHeader();
+				this.goIntoNormalMode();
+				this.homeImg();
+				this.setHomeSuiBiList();
+			}
+			this.scrollDy();
+		}
+
+		/**
+		 * 消息弹窗
+		 * @param {String} content 消息内容
+		 */
+		showMessage(content) {
+			$('body').prepend(`&amp;lt;div class="esa-layer"&amp;gt;&amp;lt;span class="esa-layer-content"&amp;gt;${content}&amp;lt;/span&amp;gt;&amp;lt;/div&amp;gt;`);
+			let $layer = $('.esa-layer');
+			$layer.fadeIn(200);
+			setTimeout(() =&amp;gt; {
+				$layer.remove();
+			}, 2000);
+		}
+
+		/**
+		 * 通用模式设置
+		 */
+		getMainMode() {
+			$('.site-branding').hover(function () {
+				$('.logolink .sakuraso').css({
+					'background-color': '#FE9600',
+					'color': '#fff'
+				})
+				$('.chinese-font').css('display', 'block')
+			}, function () {
+				$('.logolink .sakuraso').css({
+					'background-color': 'rgba(255,255,255,.5)',
+					'color': '#464646'
+				})
+				$('.chinese-font').css('display', 'none')
+			});
+			//&amp;lt;!--离开页面改变title--&amp;gt;
+			var time;
+			var normar_title = document.title;
+			document.addEventListener('visibilitychange', function () {
+				if (document.visibilityState == 'hidden') {
+					clearTimeout(time);
+					document.title = '桥豆麻袋(＃&amp;deg;Д&amp;deg;)';
+				} else {
+					document.title = '你终于回来了(。・&amp;forall;・)ノ';
+					time = setTimeout(function () {
+						document.title = normar_title;
+					}, 3000);
+
+				}
+			});
+		}
+
+		/**
+		 * 进入阅读模式
+		 */
+		goIntoReadingMode() {
+			let $win = $(window);
+			let _that = this;
+			if ($win.width() &amp;gt; 767) {
+				$(_that.cnblogs.header).css('opacity', '1');
+				$('#header #navList').css('margin-left', '0px');
+				//修改文章布局
+				$('#main').css({'margin': '0 auto', 'padding': '0 10px', 'min-width': '950px'});
+			}
+		}
+
+		/**
+		 * 进入正常模式
+		 */
+		goIntoNormalMode() {
+			let $win = $(window);
+			let _that = this;
+			var oldScrollY = 0;
+			if ($win.width() &amp;gt; 767) {
+				$('#main').css({'min-width': '800px'});
+				//鼠标悬浮判断，如果页面不是位于顶部则head不消失
+				$(_that.cnblogs.header).hover(function () {
+					$(_that.cnblogs.header).css('opacity', '1');
+					$('#header #navList').css('margin-left', '0px');
+				}, function () {
+					if ($(document).scrollTop() &amp;gt; 0) {
+						$(_that.cnblogs.header).css('opacity', '1');
+						$('#header #navList').css('margin-left', '0px');
+					} else {
+						$(_that.cnblogs.header).css('opacity', '0');
+						$('#header #navList').css('margin-left', '100px');
+					}
+
+				})
+				//鼠标悬浮logo判断
+				$('.site-branding').hover(function () {
+					$(_that.cnblogs.header).css('opacity', '1');
+					$('#header #navList').css('margin-left', '0px');
+				}, function () {
+					if ($(document).scrollTop() &amp;gt; 0) {
+						$(_that.cnblogs.header).css('opacity', '1');
+						$('#header #navList').css('margin-left', '0px');
+					} else {
+						$(_that.cnblogs.header).css('opacity', '0');
+						$('#header #navList').css('margin-left', '100px');
+					}
+
+				})
+				//页面滚动判断
+				$win.scroll(function () {
+					oldScrollY = this.scrollY;
+					if (oldScrollY &amp;gt; 0) {
+						$(_that.cnblogs.header).css('opacity', '1');
+						$('#header #navList').css('margin-left', '0px');
+					} else {
+						$(_that.cnblogs.header).css('opacity', '0');
+						$('#header #navList').css('margin-left', '100px');
+					}
+				});
+			}
+		}
+
+		/**
+		 * 构建自定义 DOM 元素
+		 */
+		buildCustomElements() {
+			// Change page title.
+			const blogTitle = $(this.cnblogs.blogTitle).find('h1 a').html();
+			const autherName = $(this.cnblogs.publicProfile).find('a:eq(0)').html();
+			let $title = $('head').find('title');
+			$title.html($title.html().replace(`春原庄的雪 | ${autherName}`, `${blogTitle}`));
+
+			// Build a tags button on navbar.
+			let $navList = $(this.cnblogs.navList);
+			$.each($navList.find('li'), (index, nav) =&amp;gt; {
+				$(nav).append('&amp;lt;i&amp;gt;&amp;lt;/i&amp;gt;');
+			});
+
+			// Build a menu button on mobile browser.
+			$('body').prepend(`&amp;lt;div class="esa-mobile-menu"&amp;gt;&amp;lt;/div&amp;gt;`);
+			$('.esa-mobile-menu').on('click', () =&amp;gt; {
+				$(this.cnblogs.navigator).fadeToggle(200);
+			});
+
+			//回到顶部特效
+			$('body').prepend(`&amp;lt;a href="#" class="cd-top faa-float animated cd-fade-out"&amp;gt;&amp;lt;/a&amp;gt;`);
+			let $win = $(window);
+			let oldScrollY = 0;
+			$win.scroll(function () {
+				oldScrollY = this.scrollY;
+				let height = window.innerHeight;
+				let top = '-' + (900 - height + 80) + 'px';
+				if (oldScrollY &amp;gt; 0) {
+					$('.cd-top').css('top', top);
+				} else {
+					$('.cd-top').css('top', '-900px');
+				}
+			});
+
+
+			$("#navList").append('&amp;lt;li&amp;gt;&amp;lt;a id="blog_nav_myyoulian" class="menu" href="https://www.cnblogs.com/zouwangblog/articles/11177049.html"&amp;gt;友链&amp;lt;/a&amp;gt;&amp;lt;i&amp;gt;&amp;lt;/i&amp;gt;&amp;lt;/li&amp;gt;&amp;lt;li&amp;gt;&amp;lt;a id="blog_nav_myzanshang" class="menu" href="https://www.cnblogs.com/zouwangblog/articles/11340077.html"&amp;gt;赞赏&amp;lt;/a&amp;gt;&amp;lt;i&amp;gt;&amp;lt;/i&amp;gt;&amp;lt;/li&amp;gt;&amp;lt;li&amp;gt;&amp;lt;a id="blog_nav_myguanyu" class="menu" href=""&amp;gt;关于&amp;lt;/a&amp;gt;&amp;lt;i&amp;gt;&amp;lt;/i&amp;gt;&amp;lt;/li&amp;gt;');
+			//添加标签icon
+			$('#blog_nav_myhome').prepend('&amp;lt;i class="fa fa-fort-awesome" aria-hidden="true"&amp;gt;&amp;lt;/i&amp;gt;');
+			$('#blog_nav_contact').prepend('&amp;lt;i class="fa fa-address-book-o" aria-hidden="true"&amp;gt;&amp;lt;/i&amp;gt;');
+			$('#blog_nav_rss').prepend('&amp;lt;i class="fa fa-rss faa-pulse" aria-hidden="true"&amp;gt;&amp;lt;/i&amp;gt;');
+			$('#blog_nav_admin').prepend('&amp;lt;i class="fa fa-list" aria-hidden="true"&amp;gt;&amp;lt;/i&amp;gt;');
+			$('#blog_nav_myyoulian').prepend('&amp;lt;i class="fa fa-link" aria-hidden="true"&amp;gt;&amp;lt;/i&amp;gt;');
+			$('#blog_nav_myzanshang').prepend('&amp;lt;i class="fa fa-heart" aria-hidden="true"&amp;gt;&amp;lt;/i&amp;gt;');
+			$('#blog_nav_myguanyu').prepend('&amp;lt;i class="fa fa-leaf" aria-hidden="true"&amp;gt;&amp;lt;/i&amp;gt;');
+
+			//添加li内嵌ui
+			let guanyu = '&amp;lt;ul class="sub-menu"&amp;gt;' +
+					'&amp;lt;li&amp;gt;&amp;lt;a href="https://www.cnblogs.com/zouwangblog/articles/11157339.html "&amp;gt;&amp;lt;i class="fa fa-meetup" aria-hidden="true"&amp;gt;&amp;lt;/i&amp;gt; 我？&amp;lt;/a&amp;gt;&amp;lt;/li&amp;gt;' +
+					'&amp;lt;li&amp;gt;&amp;lt;a href="https://www.cnblogs.com/zouwangblog/articles/11346906.html "&amp;gt;&amp;lt;i class="fa fa-area-chart" aria-hidden="true"&amp;gt;&amp;lt;/i&amp;gt; 统计&amp;lt;/a&amp;gt;&amp;lt;/li&amp;gt;' +
+					'&amp;lt;li&amp;gt;&amp;lt;a href="https://www.cnblogs.com/zouwangblog/articles/11350777.html "&amp;gt;&amp;lt;i class="fa fa-heartbeat" aria-hidden="true"&amp;gt;&amp;lt;/i&amp;gt; 监控&amp;lt;/a&amp;gt;&amp;lt;/li&amp;gt;' +
+					'&amp;lt;li&amp;gt;&amp;lt;a href="https://www.cnblogs.com/zouwangblog/p/11541835.html "&amp;gt;&amp;lt;i class="iconfont icon-taohua" aria-hidden="true"&amp;gt;&amp;lt;/i&amp;gt; 主题&amp;lt;/a&amp;gt;&amp;lt;/li&amp;gt;' +
+					'&amp;lt;/ul&amp;gt;';
+			$('#blog_nav_myguanyu').after(guanyu);
+
+		}
+
+		/**
+		 * 构建主题版权信息
+		 */
+		buildCopyright() {
+			//这里能保留么，算是我的一个小心愿。
+			var content = `&amp;lt;div&amp;gt; Powered By &amp;lt;a href="https://www.cnblogs.com" target="_blank"&amp;gt;Cnblogs&amp;lt;/a&amp;gt; |
+            Theme &amp;lt;a href="https://github.com/Zou-Wang/CNblogs-Theme-Sakura" target="_blank"&amp;gt;Toretto v${this.version}&amp;lt;/a&amp;gt;&amp;lt;/div&amp;gt;`;
+			$(this.cnblogs.footer).append(content);
+		}
+
+		/**
+		 * 构建博客签名
+		 */
+		buildPostSignature() {
+			const config = this.defaluts.signature;
+			if (config.enable) {
+				const postUrl = $(this.cnblogs.postTitle).attr('href');
+				const authorName = config.author || $(this.cnblogs.publicProfile).find('a:eq(0)').html();
+
+				const content =
+						`&amp;lt;div class="esa-post-signature"&amp;gt; 
+                    &amp;lt;p&amp;gt;作者：&amp;lt;a href="${config.home}"&amp;gt;${authorName}&amp;lt;/a&amp;gt;&amp;lt;/p&amp;gt; 
+                    &amp;lt;p&amp;gt;出处：&amp;lt;a href="${postUrl}"&amp;gt;${postUrl}&amp;lt;/a&amp;gt;&amp;lt;/p&amp;gt; 
+                    &amp;lt;p&amp;gt;本站使用「&amp;lt;a href="${config.link}"  target="_blank"&amp;gt;${config.license}&amp;lt;/a&amp;gt;」创作共享协议，转载请在文章明显位置注明作者及出处。&amp;lt;/p&amp;gt; 
+                &amp;lt;/div&amp;gt;`;
+
+				$(this.cnblogs.postSignature).html(content).show();
+			}
+		}
+
+		/**
+		 * 构建评论者头像
+		 */
+		buildPostCommentAvatars() {
+			var builder = () =&amp;gt; {
+				$(this.cnblogs.postCommentBody).before(`&amp;lt;div class='esa-comment-avatar'&amp;gt;&amp;lt;a target='_blank'&amp;gt;&amp;lt;img /&amp;gt;&amp;lt;/a&amp;gt;&amp;lt;/div&amp;gt;`);
+				let feedbackCon = $(this.cnblogs.feedbackContent);
+				for (var i = 0; i &amp;lt; feedbackCon.length; i++) {
+					let avatar = 'https://pic.cnblogs.com/face/sample_face.gif';
+					let span = $(feedbackCon[i]).find("span:last")[0];
+					if (span) {
+						avatar = $(span).html().replace('http://', '//');
+					}
+					$(feedbackCon[i]).find(".esa-comment-avatar img").attr("src", avatar);
+					let href = $(feedbackCon[i]).parent().find(".comment_date").next().attr("href");
+					$(feedbackCon[i]).find(".esa-comment-avatar a").attr("href", href);
+				}
+			}
+			if ($(this.cnblogs.postCommentBody).length) {
+				builder();
+			} else {
+				let count = 1;
+				// poll whether the feedbacks is loaded.
+				let intervalId = setInterval(() =&amp;gt; {
+					if ($(this.cnblogs.postCommentBody).length) {
+						clearInterval(intervalId);
+						builder();
+					}
+					if (count == 10) {
+						// no feedback.
+						clearInterval(intervalId);
+					}
+					count++;
+				}, 500);
+			}
+		}
+
+		/**
+		 * 构建赞赏模块
+		 */
+		buildPostSponsor() {
+			const sponsor = this.defaluts.sponsor;
+			const github = this.defaluts.github;
+			const that = this;
+			if (!sponsor.enable) {
+				return;
+			}
+
+			$('#blog_post_info').prepend(`
+            &amp;lt;div class="esa-sponsor"&amp;gt;
+                &amp;lt;a class="github" href="${github.enable ? github.link : 'https://github.com/Kaiyuan/donate-page'}" target="_blank" class="posa tr3" title="Github"&amp;gt;&amp;lt;/a&amp;gt;
+                &amp;lt;div class="text tr3"&amp;gt;${sponsor.text || 'Sponsor'}&amp;lt;/div&amp;gt;
+                &amp;lt;ul class="box posa tr3"&amp;gt;
+                    &amp;lt;li class="paypal"&amp;gt;PayPal&amp;lt;/li&amp;gt;
+                    &amp;lt;li class="alipay"&amp;gt;AliPay&amp;lt;/li&amp;gt;
+                    &amp;lt;li class="wechat"&amp;gt;WeChat&amp;lt;/li&amp;gt;
+                &amp;lt;/ul&amp;gt;
+                &amp;lt;div id="QRBox" class="posa left-100"&amp;gt;
+                    &amp;lt;div id="MainBox"&amp;gt;&amp;lt;/div&amp;gt;
+                &amp;lt;/div&amp;gt;
+            &amp;lt;/div&amp;gt;`);
+
+			const $sponsor = $('.esa-sponsor');
+			const QRBox = $('#QRBox');
+			const MainBox = $('#MainBox');
+
+			function showQR(QR) {
+				if (QR) {
+					MainBox.css('background-image', 'url(' + QR + ')');
+				}
+				$sponsor.find('.text, .box, .github').addClass('blur');
+				QRBox.fadeIn(300, function () {
+					MainBox.addClass('showQR');
+				});
+			}
+
+			$sponsor.find('.box&amp;gt;li').click(function () {
+				var type = $(this).attr('class');
+				if (type === 'paypal') {
+					if (!sponsor.paypal) {
+						return that.showMessage('博主忘记设置 PayPal 收款地址');
+					}
+					window.open(sponsor.paypal, '_blank');
+				} else if (type === 'alipay') {
+					if (!sponsor.alipay) {
+						return that.showMessage('博主忘记设置支付宝收款二维码');
+					}
+					showQR(sponsor.alipay);
+				} else if (type === 'wechat') {
+					if (!sponsor.wechat) {
+						return that.showMessage('博主忘记设置微信收款二维码');
+					}
+					showQR(sponsor.wechat);
+				}
+			});
+
+			MainBox.click(function () {
+				MainBox.removeClass('showQR').addClass('hideQR');
+				setTimeout(function (a) {
+					QRBox.fadeOut(300, function () {
+						MainBox.removeClass('hideQR');
+					});
+					$sponsor.find('.text, .box, .github').removeClass('blur');
+				}, 600);
+			});
+		}
+
+		/**
+		 * 构建收藏按钮
+		 */
+		buildPostFavoriteBtn() {
+			let builder = () =&amp;gt; {
+				$(this.cnblogs.postDigg).prepend(`&amp;lt;div class="favorite" onclick="AddToWz(cb_entryId);return false;"&amp;gt;&amp;lt;span class="favoritenum" id="favorite_count"&amp;gt;&amp;lt;/span&amp;gt;&amp;lt;/div&amp;gt;`);
+			};
+
+			if ($(this.cnblogs.postDigg).length) {
+				builder();
+			} else {
+				let intervalId = setInterval(() =&amp;gt; {
+					if ($(this.cnblogs.postDigg).length) {
+						clearInterval(intervalId);
+						builder();
+					}
+				}, 200);
+			}
+		}
+
+		/**
+		 * 构建博客目录
+		 */
+		buildPostCatalog() {
+			const config = this.defaluts.catalog;
+
+			if (config.enable) {
+				let levels = [config.level1, config.level2, config.level3];
+				let $headers = $(this.cnblogs.postBody).find(levels.join(','));
+
+				if (!$headers.length) {
+					return false;
+				}
+
+				let $catalog = $(
+						`&amp;lt;div class="esa-catalog"&amp;gt;
+                        &amp;lt;div class="esa-catalog-contents"&amp;gt;
+                            &amp;lt;div class="esa-catalog-title"&amp;gt;目录&amp;lt;/div&amp;gt;
+                            &amp;lt;a class="esa-catalog-close"&amp;gt;✕&amp;lt;/a&amp;gt;
+                        &amp;lt;/div&amp;gt;
+                    &amp;lt;/div&amp;gt;`);
+
+				let h1c = 0;
+				let h2c = 0;
+				let h3c = 0;
+
+				let catalogContents = '&amp;lt;ul&amp;gt;';
+
+				let cryptoObj = window.crypto || window.msCrypto; // for IE 11
+				let eleIds = cryptoObj.getRandomValues(new Uint32Array($headers.length));
+
+				$.each($headers, (index, header) =&amp;gt; {
+					const tagName = $(header)[0].tagName.toLowerCase();
+					let titleIndex = '';
+					let titleContent = $(header).html();
+					let title = titleContent;
+					if (!config.index) {
+						switch (tagName) {
+							case config.level1:
+								titleContent = `&amp;lt;span class="level1"&amp;gt;${titleContent}&amp;lt;/span&amp;gt;`;
+								break;
+							case config.level2:
+								titleContent = `&amp;lt;span class="level2"&amp;gt;${titleContent}&amp;lt;/span&amp;gt;`;
+								break;
+							case config.level3:
+								titleContent = `&amp;lt;span class="level3"&amp;gt;${titleContent}&amp;lt;/span&amp;gt;`;
+								break;
+						}
+					} else {
+						if (tagName === config.level1) {
+							h1c++;
+							h2c = 0;
+							h3c = 0;
+							titleIndex = `&amp;lt;span class="level1"&amp;gt;${h1c}. &amp;lt;/span&amp;gt;`;
+						} else if (tagName === config.level2) {
+							h2c++;
+							h3c = 0;
+							titleIndex = `&amp;lt;span class="level2"&amp;gt;${h1c}.${h2c}. &amp;lt;/span&amp;gt;`;
+						} else if (tagName === config.level3) {
+							h3c++;
+							titleIndex = `&amp;lt;span class="level3"&amp;gt;${h1c}.${h2c}.${h3c}. &amp;lt;/span&amp;gt;`;
+						}
+					}
+
+					var idx = eleIds[index];
+
+					catalogContents +=
+							`&amp;lt;li class="li_${tagName}" title="${title}"&amp;gt;
+                            &amp;lt;i class="${idx}" &amp;gt;&amp;lt;/i&amp;gt;&amp;lt;a class="esa-anchor-link"&amp;gt;${(titleIndex + titleContent)}&amp;lt;/a&amp;gt;
+                        &amp;lt;/li&amp;gt;`;
+
+					$(header).attr('id', `${idx}`)
+							.html(`&amp;lt;span&amp;gt;${titleContent}&amp;lt;/span&amp;gt;&amp;lt;a href="#${idx}" class="esa-anchor"&amp;gt;#&amp;lt;/a&amp;gt;`)
+							.hover(() =&amp;gt; {
+								$(header).find('.esa-anchor').css('opacity', 1);
+							}, () =&amp;gt; {
+								$(header).find('.esa-anchor').css('opacity', 0);
+							});
+				});
+				catalogContents += `&amp;lt;/ul&amp;gt;`;
+
+				$catalog.find('.esa-catalog-contents').append(catalogContents);
+				$catalog.appendTo('body');
+
+				let $tabContent = $('.esa-catalog-contents');
+
+				$tabContent.fadeIn();
+
+				$('.esa-anchor-link').on('click', function () {
+					let position = $('#' + ($(this).prev('i').attr('class'))).offset().top - 80;
+					$('html, body').animate({
+						scrollTop: position
+					}, 300);
+				});
+
+				$('.esa-catalog-close').on('click', () =&amp;gt; {
+					$tabContent.hide();
+				});
+
+				if (config.move) {
+					let move = {
+						start: false,
+						pois: [0, 0],
+					};
+					$('.esa-catalog-title').on('mousedown', function (e) {
+						e.preventDefault();
+						move.start = true;
+						let position = $('.esa-catalog').position();
+						let poisX = e.clientX - parseFloat(position.left);
+						let poisY = e.clientY - parseFloat(position.top);
+						move.pois = [poisX, poisY];
+					});
+					$(document).on('mousemove', (e) =&amp;gt; {
+						if (move.start) {
+							let offsetX = e.clientX - move.pois[0];
+							let offsetY = e.clientY - move.pois[1];
+							let fixed = $('.esa-catalog').css('position') === 'fixed';
+
+							e.preventDefault();
+
+							move.stX = fixed ? 0 : $(window).scrollLeft();
+							move.stY = fixed ? 0 : $(window).scrollTop();
+
+							let setRig = $(window).width() - $('.esa-catalog').outerWidth() + move.stX;
+							let setBot = $(window).height() - $('.esa-catalog').outerHeight() + move.stY;
+
+							offsetX &amp;lt; move.stX &amp;amp;&amp;amp; (offsetX = move.stX);
+							offsetX &amp;gt; setRig &amp;amp;&amp;amp; (offsetX = setRig);
+							offsetY &amp;lt; move.stY &amp;amp;&amp;amp; (offsetY = move.stY);
+							offsetY &amp;gt; setBot &amp;amp;&amp;amp; (offsetY = setBot);
+
+							$('.esa-catalog').css({
+								left: offsetX,
+								top: offsetY,
+								right: 'auto',
+							});
+						}
+					}).on('mouseup', (_e) =&amp;gt; {
+						if (move.start) {
+							move.start = false;
+						}
+					});
+				}
+			}
+		}
+
+		/**
+		 * 构建 Github Corner
+		 */
+		buildGithubCorner() {
+			const config = this.defaluts.github;
+			if (config.enable) {
+				let fillStyle = config.fill ? `fill:${config.fill};` : '';
+				$('body').append(
+						`&amp;lt;a href="${config.link}" class="github-corner" title="Fork me on GitHub"&amp;gt;
+                        &amp;lt;svg width="60" height="60" viewBox="0 0 250 250" style="${fillStyle} color:${config.color}; z-index: 999999; position: fixed; top: 0; border: 0; left: 0; transform: scale(-1, 1);" aria-hidden="true"&amp;gt;
+                            &amp;lt;path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"&amp;gt;&amp;lt;/path&amp;gt;
+                            &amp;lt;path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"&amp;gt;&amp;lt;/path&amp;gt;
+                            &amp;lt;path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"&amp;gt;&amp;lt;/path&amp;gt;
+                        &amp;lt;/svg&amp;gt;
+                    &amp;lt;/a&amp;gt;`);
+			}
+		}
+
+		/**
+		 * 构建代码复制按钮
+		 */
+		buildPostCodeCopyBtns() {
+			let $pres = $('.postBody .cnblogs-markdown').find('pre');
+
+			if (!$pres.length) {
+				return false;
+			}
+
+			$.each($pres, (index, pre) =&amp;gt; {
+				$(pre).find('code').attr('id', `copy_target_${index}`);
+				$(pre).prepend(`&amp;lt;div class="esa-clipboard-button" data-clipboard-target="#copy_target_${index}" title="复制代码"&amp;gt;Copy&amp;lt;/div&amp;gt;`);
+			});
+
+			$.getScript(`https://unpkg.com/clipboard@2.0.0/dist/clipboard.min.js`, () =&amp;gt; {
+				let clipboard = new ClipboardJS('.esa-clipboard-button');
+				clipboard.on('success', (e) =&amp;gt; {
+					this.showMessage('代码已复制到粘贴板中');
+					e.clearSelection();
+				});
+				clipboard.on('error', (e) =&amp;gt; {
+					this.showMessage('代码复制失败');
+				});
+			});
+		}
+
+		/**
+		 * 构建工具栏
+		 */
+		buildToolbar() {
+			const catalog = this.defaluts.catalog;
+
+			$('body').append(`&amp;lt;div class="esa-toolbar"&amp;gt;
+                &amp;lt;!--&amp;lt;button class="esa-toolbar-gotop"&amp;gt;&amp;lt;div class="tips"&amp;gt;返回顶部&amp;lt;/div&amp;gt;&amp;lt;/button&amp;gt;--&amp;gt;
+                &amp;lt;!--&amp;lt;button class="esa-toolbar-contents"&amp;gt;&amp;lt;div class="tips"&amp;gt;阅读目录&amp;lt;/div&amp;gt;&amp;lt;/button&amp;gt;--&amp;gt;
+                &amp;lt;button class="esa-toolbar-follow"&amp;gt;捕获&amp;lt;/button&amp;gt;
+            &amp;lt;/div&amp;gt;`);
+
+			// let $btnGotop = $('.esa-toolbar-gotop');
+			// let $btnContents = $('.esa-toolbar-contents');
+			let $btnFollow = $('.esa-toolbar-follow');
+
+			// if (catalog.enable) {
+			// 	$btnContents.on('click', () =&amp;gt; {
+			// 		let $catalog = $('.esa-catalog-contents');
+			// 		if ($catalog.css('display') == 'none') {
+			// 			$catalog.fadeIn();
+			// 		} else {
+			// 			$catalog.hide();
+			// 		}
+			// 	}).hover(() =&amp;gt; {
+			// 		$btnContents.find('.tips').show();
+			// 	}, () =&amp;gt; {
+			// 		$btnContents.find('.tips').hide();
+			// 	});
+			// } else {
+			// 	$btnContents.remove();
+			// }
+			//
+			// $btnGotop.on('click', () =&amp;gt; {
+			// 	$(window).scrollTop(0);
+			// }).hover(() =&amp;gt; {
+			// 	$btnGotop.find('.tips').show();
+			// }, () =&amp;gt; {
+			// 	$btnGotop.find('.tips').hide();
+			// });
+			//
+			// $(window).scroll(function () {
+			// 	if (this.scrollY &amp;gt; 200) {
+			// 		$btnGotop.fadeIn();
+			// 	} else {
+			// 		$btnGotop.fadeOut();
+			// 	}
+			// });
+
+			$btnFollow.on('click', () =&amp;gt; {
+				loadLink(location.protocol + "//common.cnblogs.com/scripts/artDialog/ui-dialog.css", () =&amp;gt; {
+					loadScript(location.protocol + "//common.cnblogs.com/scripts/artDialog/dialog-min.js", () =&amp;gt; {
+						if (!isLogined) {
+							return login();
+						}
+						if (c_has_follwed) {
+							return this.showMessage('您已经关注过该博主');
+						}
+						const n = cb_blogUserGuid;
+						$.ajax({
+							url: "/mvc/Follow/FollowBlogger.aspx",
+							data: '{"blogUserGuid":"' + n + '"}',
+							dataType: "text",
+							type: "post",
+							contentType: "application/json; charset=utf-8",
+							success: (msg) =&amp;gt; {
+								msg == "未登录" ? login() : (msg == "关注成功" &amp;amp;&amp;amp; followByGroup(n, !0));
+								this.showMessage(msg);
+							}
+						})
+					})
+				})
+			}).hover(() =&amp;gt; {
+				$btnFollow.find('.tips').show();
+			}, () =&amp;gt; {
+				$btnFollow.find('.tips').hide();
+			});
+		}
+
+		/**
+		 * 构建博主信息
+		 */
+		buildBloggerProfile() {
+			const config = this.defaluts.profile;
+
+			if (!config.enable) {
+				return;
+			}
+
+			if (!this.isPostPage &amp;amp;&amp;amp; config.avatar) {
+				$(this.cnblogs.sideBarMain).prepend(`&amp;lt;img class="esa-profile-avatar" src="${config.avatar}" /&amp;gt;`);
+			}
+
+			if (config.favicon) {
+				$('head').append(`&amp;lt;link rel="shortcut icon" href="${config.favicon}" type="image/x-icon" /&amp;gt;`);
+			}
+
+			//博客logo
+			var title = '&amp;lt;div class="site-branding"&amp;gt;' +
+					'&amp;lt;span class="logolink moe-mashiro"&amp;gt;' +
+					'&amp;lt;a href="https://www.cnblogs.com/zouwangblog/" alt="春原庄的雪"&amp;gt;' +
+					'&amp;lt;ruby&amp;gt;&amp;lt;span class="sakuraso"&amp;gt;すのはら荘&amp;lt;/span&amp;gt;&amp;lt;span class="no"&amp;gt;の&amp;lt;/span&amp;gt;&amp;lt;span class="shironeko"&amp;gt;雪&amp;lt;/span&amp;gt;' +
+					'&amp;lt;rt class="chinese-font"&amp;gt;春原庄的雪&amp;lt;/rt&amp;gt;&amp;lt;/ruby&amp;gt;&amp;lt;/a&amp;gt;&amp;lt;/span&amp;gt;' +
+					'&amp;lt;/div&amp;gt;'
+			$('body').prepend(title);
+
+
+		}
+
+		/**
+		 * 构建顶部滚动进度条 需要在页面dom元素构建成功之后再计算文档高度。
+		 */
+		scrollDy() {
+			let that = this;
+			$('body').prepend(`&amp;lt;div class="scrollCls" id="scrollInfo"&amp;gt;&amp;lt;/div&amp;gt;`);
+			// 可滚动的总高度
+			var scrollTotal = this.getScrollHeight() - this.getWindowHeight();
+			// 获取dom元素
+			var scrollEl = document.getElementById('scrollInfo')
+			$(window).scroll(function () {
+				// 已经滚动距离
+				var sHeight = that.getScrollTop();
+				// 占比
+				var bl = Math.min((sHeight / scrollTotal) * 100, 100);
+				// 设置
+				scrollEl.style.width = bl + '%';
+			})
+
+		}
+
+		// 已经滚动距离
+		getScrollTop() {
+			var scrollTop = 0, bodyScrollTop = 0, documentScrollTop = 0;
+			if (document.body) {
+				bodyScrollTop = document.body.scrollTop;
+			}
+			if (document.documentElement) {
+				documentScrollTop = document.documentElement.scrollTop;
+			}
+			scrollTop = (bodyScrollTop - documentScrollTop &amp;gt; 0) ? bodyScrollTop : documentScrollTop;
+			return scrollTop;
+		}
+
+		// 文档的总高度
+		getScrollHeight() {
+			var scrollHeight = 0, bodyScrollHeight = 0, documentScrollHeight = 0;
+			if (document.body) {
+				bodyScrollHeight = document.body.scrollHeight;
+			}
+			if (document.documentElement) {
+				documentScrollHeight = document.documentElement.scrollHeight;
+			}
+			scrollHeight = (bodyScrollHeight - documentScrollHeight &amp;gt; 0) ? bodyScrollHeight : documentScrollHeight;
+			return scrollHeight;
+		}
+
+		// 窗体高度
+		getWindowHeight() {
+			var windowHeight = 0;
+			if (document.compatMode == "CSS1Compat") {
+				windowHeight = document.documentElement.clientHeight;
+			} else {
+				windowHeight = document.body.clientHeight;
+			}
+			return windowHeight;
+		}
+
+		//=========================设置主页逻辑
+		/**
+		 * 构建主页头部html
+		 * headertop 网格遮罩
+		 */
+		mainHeader() {
+			const config = this.defaluts.topInfo;
+			var header =
+					`&amp;lt;div class="headertop filter-dot"&amp;gt;` +
+					`&amp;lt;/div&amp;gt;` +
+					`&amp;lt;div class="main-header"&amp;gt;` +
+					`&amp;lt;/div&amp;gt;` +
+					`&amp;lt;div class="focusinfo no-select"&amp;gt;` +
+					`       &amp;lt;h1 class="center-text glitch is-glitching Ubuntu-font" data-text="Hi, Toretto!"&amp;gt;${config.title}&amp;lt;/h1&amp;gt;` +
+					`       &amp;lt;div class="header-info"&amp;gt;&amp;lt;p&amp;gt;&amp;lt;i class="fa fa-quote-left"&amp;gt;&amp;lt;/i&amp;gt; ${config.text} &amp;lt;i class="fa fa-quote-right"&amp;gt;&amp;lt;/i&amp;gt;&amp;lt;/p&amp;gt;` +
+					`           &amp;lt;div class="top-social_v2"&amp;gt;` +
+					`              &amp;lt;li id="bg-pre"&amp;gt;&amp;lt;img class="flipx" src="https://img2018.cnblogs.com/blog/1646268/201908/1646268-20190808103709869-648245711.png"&amp;gt;&amp;lt;/li&amp;gt;` +
+					`              &amp;lt;li&amp;gt;&amp;lt;a href="${config.github}" target="_blank" class="social-github" title="github"&amp;gt;&amp;lt;img src="https://img2018.cnblogs.com/blog/1646268/201908/1646268-20190808095618459-218538626.png"&amp;gt;&amp;lt;/a&amp;gt;&amp;lt;/li&amp;gt;` +
+					`              &amp;lt;li&amp;gt;&amp;lt;a href="${config.weibo}" target="_blank" class="social-sina" title="sina"&amp;gt;&amp;lt;img src="https://img2018.cnblogs.com/blog/1646268/201908/1646268-20190808095623418-1617766229.png"&amp;gt;&amp;lt;/a&amp;gt;&amp;lt;/li&amp;gt;` +
+					`              &amp;lt;li&amp;gt;&amp;lt;a href="${config.telegram}" target="_blank" class="social-lofter" title="telegram"&amp;gt;&amp;lt;img src="https://img2018.cnblogs.com/blog/1646268/201908/1646268-20190808095628401-835828752.png"&amp;gt;&amp;lt;/a&amp;gt;&amp;lt;/li&amp;gt;` +
+					`              &amp;lt;li&amp;gt;&amp;lt;a href="${config.music}" target="_blank" class="social-wangyiyun" title="CloudMusic"&amp;gt;&amp;lt;img src="https://img2018.cnblogs.com/blog/1646268/201908/1646268-20190808095640330-1209750721.png"&amp;gt;&amp;lt;/a&amp;gt;&amp;lt;/li&amp;gt;` +
+					`              &amp;lt;li&amp;gt;&amp;lt;a href="${config.twitter}" target="_blank" class="social-wangyiyun" title="Twitter"&amp;gt;&amp;lt;img src="https://img2018.cnblogs.com/blog/1646268/201908/1646268-20190808095635213-701885869.png"&amp;gt;&amp;lt;/a&amp;gt;&amp;lt;/li&amp;gt;` +
+					`              &amp;lt;li&amp;gt;&amp;lt;a href="${config.zhihu}" target="_blank" class="social-wangyiyun" title="Zhihu"&amp;gt;&amp;lt;img src="https://img2018.cnblogs.com/blog/1646268/201908/1646268-20190808095650119-1882504549.png"&amp;gt;&amp;lt;/a&amp;gt;&amp;lt;/li&amp;gt;` +
+					`              &amp;lt;li&amp;gt;&amp;lt;a href="${config.mail}" target="_blank" class="social-wangyiyun" title="E-mail"&amp;gt;&amp;lt;img src="https://img2018.cnblogs.com/blog/1646268/201908/1646268-20190808095613956-1350546638.png"&amp;gt;&amp;lt;/a&amp;gt;&amp;lt;/li&amp;gt;` +
+					`              &amp;lt;li id="bg-next"&amp;gt;&amp;lt;img src="https://img2018.cnblogs.com/blog/1646268/201908/1646268-20190808103709869-648245711.png"&amp;gt;&amp;lt;/li&amp;gt;` +
+					`           &amp;lt;/div&amp;gt;` +
+					`      &amp;lt;/div&amp;gt;` +
+					`&amp;lt;/div&amp;gt;` +
+					`&amp;lt;div class="wave"&amp;gt;` +
+					`   &amp;lt;div id="banner_wave_1"&amp;gt;&amp;lt;/div&amp;gt;` +
+					`   &amp;lt;div id="banner_wave_2"&amp;gt;&amp;lt;/div&amp;gt;` +
+					`&amp;lt;/div&amp;gt;` +
+					`&amp;lt;div class="scroll-down" data-offset="-45"&amp;gt;` +
+					`        &amp;lt;span class="hidden"&amp;gt;Scroll Down&amp;lt;/span&amp;gt;` +
+					`        &amp;lt;i class="fa fa-chevron-down" aria-hidden="true"&amp;gt;&amp;lt;/i&amp;gt;` +
+					`&amp;lt;/div&amp;gt;`;
+			$('#home').prepend(header);
+		}
+
+		/**
+		 * 构建主页头图
+		 */
+		homeImg() {
+			const config = this.defaluts.topImg;
+			// 设置主页图片
+			let homeTopImg = config.homeTopImg, bgImg;
+			let index = this.randomNum(0, homeTopImg.length - 1);
+			homeTopImg.length &amp;gt; 0 ?
+					(homeTopImg.length &amp;gt; 1 ? bgImg = homeTopImg[index] : bgImg = homeTopImg[0])
+					: bgImg = "";
+			$('.main-header').css({
+				'background-image': 'url(' + bgImg + ')',
+			});
+
+			// 头图点击滚动到内容位置
+			$('.scroll-down').click(function () {
+				let endScroll;
+				endScroll = $('#main').offset().top - 20;
+				$('html,body').stop().animate({scrollTop: endScroll}, 1000);
+			});
+
+			//切换首页壁纸
+			$('#bg-pre').click(function () {
+				index--;
+				if (index &amp;lt; 0) {
+					index = homeTopImg.length - 1
+				}
+				let nextImg = homeTopImg[index]
+				$('.main-header').css({
+					'background-image': 'url(' + nextImg + ')',
+				});
+			});
+			$('#bg-next').click(function () {
+				index++;
+				if (index &amp;gt; homeTopImg.length - 1) {
+					index = 0
+				}
+				let preImg = homeTopImg[index]
+				$('.main-header').css({
+					'background-image': 'url(' + preImg + ')',
+				});
+
+			})
+		}
+
+		/**
+		 * 构建首页随笔列表
+		 */
+		setHomeSuiBiList() {
+		let article_list = $('.day');
+    	let author = $(this.cnblogs.publicProfile).find('a:eq(0)').html() //作者
+		for(let i = article_list.length-1;i&amp;gt;=0;i--)
+		{
+			let time = $('.day').find('div.dayTitle')[i].textContent.replace('年', '-').replace('月', '-').replace('日', ''); //获取年月日
+			let PostTitles = $(article_list[i]).find('.postTitle');
+			let readMores = $(article_list[i]).find('a.c_b_p_desc_readmore');
+			let descs = $(article_list[i]).find('.postDesc');
+			let infos = $(article_list[i]).find('.postCon');
+			let contents = $(article_list[i]).find('.c_b_p_desc');
+			for(let j=PostTitles.length-1;j&amp;gt;=0;j--)
+			{
+				let readMore = $(readMores[j]).context.href;
+				let postTitle = $(PostTitles[j]).context.innerHTML;
+				let desc = $(descs[j]).text();
+				let readNum = desc.substring(desc.indexOf("(") + 1, desc.indexOf(")"));
+				let comNum = desc.substring(desc.lastIndexOf("(") + 1, desc.lastIndexOf(")"));
+				let edit =  $(descs[j]).find('a')[0].href;
+				let url = $(infos[j]).find('img')[0];
+				let content = contents[j].textContent.replace('阅读全文','');
+				if(url!=undefined)
+				{
+					url = url.src;
+				}else{
+					url = url = 'https://img2018.cnblogs.com/blog/1646268/201908/1646268-20190807151203983-873040918.jpg';   
+				}
+				let html = `&amp;lt;div class="post post-list-thumb post-list-show"&amp;gt;` +
+				`  &amp;lt;div class="post-thumb"&amp;gt; &amp;lt;a href="${readMore}"&amp;gt; &amp;lt;img class="lazyload" src="${url}"  data-src="${url}"&amp;gt; &amp;lt;/a&amp;gt;&amp;lt;/div&amp;gt;` +
+				`  &amp;lt;div class="post-content-wrap"&amp;gt;` +
+				`   &amp;lt;div class="post-content"&amp;gt;` +
+				`     &amp;lt;div class="post-date"&amp;gt; &amp;lt;i class="iconfont icon-time"&amp;gt;&amp;lt;/i&amp;gt;发布于 ${time}&amp;lt;/div&amp;gt;` +
+				`     &amp;lt;div class="post-title"&amp;gt;${postTitle}&amp;lt;/div&amp;gt;` +
+				`     &amp;lt;div class="post-meta"&amp;gt; &amp;lt;span&amp;gt;&amp;lt;i class="iconfont icon-attention"&amp;gt;&amp;lt;/i&amp;gt;${readNum} 热度&amp;lt;/span&amp;gt; &amp;lt;span class="comments-number"&amp;gt;&amp;lt;i class="iconfont icon-mark"&amp;gt;&amp;lt;/i&amp;gt;${comNum} 条评论&amp;lt;/span&amp;gt; &amp;lt;span&amp;gt;&amp;lt;i class="iconfont icon-cc-user"&amp;gt;&amp;lt;/i&amp;gt;&amp;lt;a href="https://www.cnblogs.com/zouwangblog/p/11157339.html"&amp;gt;&amp;lt;/a&amp;gt;${author}&amp;lt;/span&amp;gt;&amp;lt;/div&amp;gt;` +
+				`     &amp;lt;div class="float-content"&amp;gt;&amp;lt;p&amp;gt;${content}&amp;lt;/p&amp;gt;` +
+				`        &amp;lt;div class="post-bottom"&amp;gt;` +
+				`           &amp;lt;a href="${readMore}" class="button-normal"&amp;gt;&amp;lt;i class="iconfont icon-gengduo"&amp;gt;&amp;lt;/i&amp;gt;&amp;lt;/a&amp;gt;` +
+				`           &amp;lt;a href="${edit}" class="button-normal"&amp;gt;&amp;lt;i class="iconfont icon-bianji"&amp;gt;&amp;lt;/i&amp;gt;&amp;lt;/a&amp;gt;` +
+				`        &amp;lt;/div&amp;gt;` +
+				`     &amp;lt;/div&amp;gt;` +
+				`  &amp;lt;/div&amp;gt;` +
+				` &amp;lt;/div&amp;gt;` +
+				`&amp;lt;/div&amp;gt;`;
+				$('.forFlow').prepend(html);
+			}
+		}
+	
+			$('.post-list-thumb:odd').addClass('post-list-thumb-left')
+
+			//构建notice
+			const config = this.defaluts.profile;
+			let notice = `&amp;lt;div class="notice"&amp;gt; &amp;lt;i class="iconfont icon-notification"&amp;gt;&amp;lt;/i&amp;gt;&amp;lt;div class="notice-content"&amp;gt;${config.notice}&amp;lt;/div&amp;gt;&amp;lt;/div&amp;gt;`
+			$('#main').prepend(notice);
+		}
+
+		//=================阅读页逻辑
+		/**
+		 * 构建阅读页头部html 如果是文章则只显示标题，如果是随笔则显示发布时间，头像，阅读量
+		 */
+		postHeader() {
+			var center =
+					'&amp;lt;div class="pattern-center"&amp;gt;' +
+					' &amp;lt;div class="pattern-attachment-img"&amp;gt;&amp;lt;img src="" data-src=""' +
+					'    style="width: 100%; height: 100%; object-fit: cover; pointer-events: none;"&amp;gt;&amp;lt;/div&amp;gt;' +
+					' &amp;lt;header class="pattern-header "&amp;gt;&amp;lt;h1 class="entry-title"&amp;gt;&amp;lt;/h1&amp;gt;&amp;lt;/header&amp;gt;' +
+					'&amp;lt;/div&amp;gt;';
+			$('#home').prepend(center);
+			const sbTitle = $('#cb_post_title_url').text();
+			$('.entry-title').text(sbTitle);// 设置标题
+			$('.postTitle').css('display', 'none');
+			let post_date = $('#post-date').text() //发布时间
+			let post_view_count = $('#post_view_count').text() //阅读数
+			if (window.location.href.indexOf('articles') === -1) {
+				var header =
+						`&amp;lt;p class="entry-census"&amp;gt;&amp;lt;span&amp;gt;&amp;lt;a href="https://www.cnblogs.com/zouwangblog/"&amp;gt;&amp;lt;img src="//pic.cnblogs.com/face/1646268/20190628143903.png"&amp;gt;&amp;lt;/a&amp;gt;&amp;lt;/span&amp;gt;&amp;lt;span&amp;gt;&amp;lt;a href="https://www.cnblogs.com/zouwangblog/"&amp;gt;Toretto&amp;lt;/a&amp;gt;&amp;lt;/span&amp;gt;&amp;lt;span class="bull"&amp;gt;&amp;middot;&amp;lt;/span&amp;gt;${post_date}&amp;lt;span class="bull"&amp;gt;&amp;middot;&amp;lt;/span&amp;gt;${post_view_count} 次阅读&amp;lt;/p&amp;gt;`;
+				$('.pattern-header').append(header)
+				$('.pattern-center').addClass('single-center')
+				$('.pattern-header').addClass('single-header')
+			} else {
+				return
+			}
+
+		}
+
+		/**
+		 * 构建非主页头图
+		 */
+		setNotHomeTopImg = function () {
+			const config = this.defaluts.topImg;
+			// 设置主页图片
+			let notHomeTopImg = config.notHomeTopImg, bgImg;
+
+			notHomeTopImg.length &amp;gt; 0 ?
+					(notHomeTopImg.length &amp;gt; 1 ? bgImg = notHomeTopImg[this.randomNum(0, notHomeTopImg.length - 1)] : bgImg = notHomeTopImg[0])
+					: bgImg = "";
+			$('.pattern-attachment-img img').attr('src', bgImg);
+		};
+
+		/**
+		 * 随机数
+		 */
+		randomNum = function (minNum, maxNum) {
+			switch (arguments.length) {
+				case 1:
+					return parseInt(Math.random() * minNum + 1);
+					break;
+				case 2:
+					return parseInt(Math.random() * (maxNum - minNum + 1) + minNum);
+					break;
+				default:
+					return 0;
+					break;
+			}
+		};
+	}
+})(jQuery);&lt;/pre&gt;</string>
+                  </value>
+                </member>
+                <member>
+                  <name>title</name>
+                  <value>
+                    <string>main</string>
+                  </value>
+                </member>
+                <member>
+                  <name>categories</name>
+                  <value>
+                    <array>
+                      <data />
+                    </array>
+                  </value>
+                </member>
+                <member>
+                  <name>link</name>
+                  <value>
+                    <string>https://www.cnblogs.com/Wood1130/p/17034100.html</string>
+                  </value>
+                </member>
+                <member>
+                  <name>permalink</name>
+                  <value>
+                    <string>https://www.cnblogs.com/Wood1130/p/17034100.html</string>
+                  </value>
+                </member>
+                <member>
+                  <name>postid</name>
+                  <value>
+                    <i4>17034100</i4>
+                  </value>
+                </member>
+                <member>
+                  <name>mt_text_more</name>
+                  <value>
+                    <string></string>
+                  </value>
+                </member>
+                <member>
+                  <name>mt_excerpt</name>
+                  <value>
+                    <string></string>
+                  </value>
+                </member>
+              </struct>
+            </value>
+            <value>
+              <struct>
+                <member>
+                  <name>dateCreated</name>
+                  <value>
+                    <dateTime.iso8601>20221227T18:11:00</dateTime.iso8601>
+                  </value>
+                </member>
+                <member>
+                  <name>description</name>
+                  <value>
+                    <string>&lt;p&gt;游戏版本：&lt;/p&gt;
+&lt;p&gt;链接：https://pan.baidu.com/s/1Gn0GMj4sOVu8g5udQm7sIw &lt;br /&gt;提取码：1234 &lt;br /&gt;--来自百度网盘超级会员V3的分享&lt;/p&gt;
+&lt;p&gt;安装步骤跟着文件描述就可以&lt;/p&gt;
+&lt;p&gt;N2N步骤看我上一篇小兵步枪的教程即可&lt;/p&gt;
+&lt;p&gt;注意！！&lt;/p&gt;
+&lt;p&gt;在解压出的本体游戏文件中的zone\English的内容是不完整的，需要下载任何另一个版本的cod将对应文件夹进行替换。也就是说，把完整的English（如果没有English文件夹，用Chinese文件夹中的文件替换也可以）文件夹替换到这个联机版本的English文件夹中。&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://img2023.cnblogs.com/blog/2996523/202212/2996523-20221227181004434-50456397.png" alt="" loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;&amp;nbsp;&lt;/p&gt;
+&lt;p&gt;&amp;nbsp;上图是不缺失文件的English文件夹，在另一版本的COD6里面找到对应文件即可&lt;/p&gt;
+&lt;p&gt;F:\BaiduNetdiskDownload\COD6DDLC\BT\zone\english&amp;nbsp;&lt;/p&gt;</string>
+                  </value>
+                </member>
+                <member>
+                  <name>title</name>
+                  <value>
+                    <string>利用EazyN2N 实现COD6局域网特别行动联机 2022年版</string>
+                  </value>
+                </member>
+                <member>
+                  <name>categories</name>
+                  <value>
+                    <array>
+                      <data>
+                        <value>
+                          <string>[随笔分类]实用教程</string>
+                        </value>
+                      </data>
+                    </array>
+                  </value>
+                </member>
+                <member>
+                  <name>link</name>
+                  <value>
+                    <string>https://www.cnblogs.com/Wood1130/p/17008705.html</string>
+                  </value>
+                </member>
+                <member>
+                  <name>permalink</name>
+                  <value>
+                    <string>https://www.cnblogs.com/Wood1130/p/17008705.html</string>
+                  </value>
+                </member>
+                <member>
+                  <name>postid</name>
+                  <value>
+                    <i4>17008705</i4>
+                  </value>
+                </member>
+                <member>
+                  <name>mt_text_more</name>
+                  <value>
+                    <string></string>
+                  </value>
+                </member>
+                <member>
+                  <name>mt_excerpt</name>
+                  <value>
+                    <string></string>
+                  </value>
+                </member>
+              </struct>
+            </value>
+            <value>
+              <struct>
+                <member>
+                  <name>dateCreated</name>
+                  <value>
+                    <dateTime.iso8601>20221212T13:03:00</dateTime.iso8601>
+                  </value>
+                </member>
+                <member>
+                  <name>description</name>
+                  <value>
+                    <string>&lt;img src="https://img2023.cnblogs.com/blog/2996523/202212/2996523-20221212130221355-50822755.jpg" alt="" loading="lazy" /&gt;
+&lt;p&gt;&amp;nbsp;&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://img2023.cnblogs.com/blog/2996523/202212/2996523-20221212130225738-441123763.jpg" alt="" loading="lazy" /&gt;&lt;img src="https://img2023.cnblogs.com/blog/2996523/202212/2996523-20221213085439986-1386447233.png" alt="" loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;&amp;nbsp;&lt;/p&gt;
+&lt;p&gt;&amp;nbsp;&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://img2024.cnblogs.com/blog/2996523/202406/2996523-20240607115319557-658765859.jpg" alt="" loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;&amp;nbsp;&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://img2024.cnblogs.com/blog/2996523/202501/2996523-20250102171623902-216489614.bmp" alt="" loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;&amp;nbsp;&lt;/p&gt;</string>
+                  </value>
+                </member>
+                <member>
+                  <name>title</name>
+                  <value>
+                    <string>壁纸</string>
+                  </value>
+                </member>
+                <member>
+                  <name>categories</name>
+                  <value>
+                    <array>
+                      <data />
+                    </array>
+                  </value>
+                </member>
+                <member>
+                  <name>link</name>
+                  <value>
+                    <string>https://www.cnblogs.com/Wood1130/p/16975764.html</string>
+                  </value>
+                </member>
+                <member>
+                  <name>permalink</name>
+                  <value>
+                    <string>https://www.cnblogs.com/Wood1130/p/16975764.html</string>
+                  </value>
+                </member>
+                <member>
+                  <name>postid</name>
+                  <value>
+                    <i4>16975764</i4>
+                  </value>
+                </member>
+                <member>
+                  <name>mt_text_more</name>
+                  <value>
+                    <string></string>
+                  </value>
+                </member>
+                <member>
+                  <name>mt_excerpt</name>
+                  <value>
+                    <string></string>
+                  </value>
+                </member>
+              </struct>
+            </value>
+            <value>
+              <struct>
+                <member>
+                  <name>dateCreated</name>
+                  <value>
+                    <dateTime.iso8601>20221104T09:31:00</dateTime.iso8601>
+                  </value>
+                </member>
+                <member>
+                  <name>description</name>
+                  <value>
+                    <string>&lt;p&gt;&lt;span style="font-size: 18pt;"&gt;准备工作：&lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;&lt;span style="font-size: 14px;"&gt;下载：Easy N2N：https://bugxia.com/357.html&lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;跳过服务器验证附加参数：skip_nat_server_usage&lt;/p&gt;
+&lt;p&gt;设置：Eazy N2N：https://bugxia.com/525.html&lt;/p&gt;
+&lt;p&gt;&lt;span style="font-size: 18pt;"&gt;使用过程：&lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;&lt;span style="font-size: 13px;"&gt;1.将n2n.exe开启管理员启动&lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;&lt;span style="font-size: 18pt;"&gt;&lt;img src="https://img2022.cnblogs.com/blog/2996523/202211/2996523-20221104092152514-195951967.png" alt="" loading="lazy" /&gt;&lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;&amp;nbsp;&lt;/p&gt;
+&lt;p&gt;&amp;nbsp;&lt;/p&gt;
+&lt;p&gt;&amp;nbsp;2.你和你的好友选择同一个服务器点击启动&lt;/p&gt;
+&lt;p&gt;&lt;span style="font-size: 18pt;"&gt;&lt;img src="https://img2022.cnblogs.com/blog/2996523/202211/2996523-20221104092311151-103190722.png" alt="" loading="lazy" /&gt;&lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;&amp;nbsp;&lt;/p&gt;
+&lt;p&gt;&amp;nbsp;&lt;/p&gt;
+&lt;p&gt;&amp;nbsp;3.记住你的虚拟网IP地址，并点击图示分享链接图标&lt;/p&gt;
+&lt;p&gt;&lt;span style="font-size: 18pt;"&gt;&lt;img src="https://img2022.cnblogs.com/blog/2996523/202211/2996523-20221104092424514-784027271.png" alt="" loading="lazy" /&gt;&lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;&amp;nbsp;&lt;/p&gt;
+&lt;p&gt;&amp;nbsp;&lt;/p&gt;
+&lt;p&gt;&amp;nbsp;你的剪切板中将得到如下类似的链接：&lt;/p&gt;
+&lt;p&gt;easyn2n://bjJuLnMxLnBsdXMuYnVneGlhLmNvbToyMTQwMUBXT09ENzg5NDU2QGF1dG9A&lt;/p&gt;
+&lt;p&gt;4.让你的好友复制上述链接，并点击下图&amp;ldquo;其他功能&amp;rdquo;中的&amp;ldquo;导入链接&amp;rdquo;&lt;/p&gt;
+&lt;p&gt;&lt;span style="font-size: 18pt;"&gt;&lt;img src="https://img2022.cnblogs.com/blog/2996523/202211/2996523-20221104092629731-741147172.png" alt="" loading="lazy" /&gt;&lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;&amp;nbsp;&lt;/p&gt;
+&lt;p&gt;&lt;span style="font-size: 18pt;"&gt;&lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;&amp;nbsp;5.成功连上局域网后，下图列表中将会出现你好友的ip&lt;/p&gt;
+&lt;p&gt;&lt;span style="font-size: 18pt;"&gt;&lt;img src="https://img2022.cnblogs.com/blog/2996523/202211/2996523-20221104092807439-71236278.png" alt="" loading="lazy" /&gt;&lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;&amp;nbsp;&lt;/p&gt;
+&lt;p&gt;&lt;span style="font-size: 18pt;"&gt;&lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;&amp;nbsp;6.启动小兵步枪并建立房间，激活服务器&lt;/p&gt;
+&lt;p&gt;7.你的好友在加入游戏方式中选择&amp;ldquo;输入IP加入&amp;rdquo;。输入你的虚拟网IP 端口默认1234即可！&lt;/p&gt;
+&lt;p&gt;&lt;span style="font-size: 18pt;"&gt;&amp;nbsp;&lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;&amp;nbsp;&lt;/p&gt;
+&lt;p&gt;&amp;nbsp;&lt;/p&gt;
+&lt;p&gt;&amp;nbsp;&lt;/p&gt;
+&lt;p&gt;&lt;span style="font-size: 18pt;"&gt;&amp;nbsp;&lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;&amp;nbsp;&lt;/p&gt;</string>
+                  </value>
+                </member>
+                <member>
+                  <name>title</name>
+                  <value>
+                    <string>通过Eazy N2N 实现局域网下的 RWR(Running with Rifles；小兵步枪）联机 1.95版本</string>
+                  </value>
+                </member>
+                <member>
+                  <name>categories</name>
+                  <value>
+                    <array>
+                      <data>
+                        <value>
+                          <string>[随笔分类]实用教程</string>
+                        </value>
+                      </data>
+                    </array>
+                  </value>
+                </member>
+                <member>
+                  <name>link</name>
+                  <value>
+                    <string>https://www.cnblogs.com/Wood1130/p/16856658.html</string>
+                  </value>
+                </member>
+                <member>
+                  <name>permalink</name>
+                  <value>
+                    <string>https://www.cnblogs.com/Wood1130/p/16856658.html</string>
+                  </value>
+                </member>
+                <member>
+                  <name>postid</name>
+                  <value>
+                    <i4>16856658</i4>
+                  </value>
+                </member>
+                <member>
+                  <name>mt_text_more</name>
+                  <value>
+                    <string></string>
+                  </value>
+                </member>
+                <member>
+                  <name>mt_excerpt</name>
+                  <value>
+                    <string></string>
+                  </value>
+                </member>
+              </struct>
+            </value>
+            <value>
+              <struct>
+                <member>
+                  <name>dateCreated</name>
+                  <value>
+                    <dateTime.iso8601>20221002T11:22:00</dateTime.iso8601>
+                  </value>
+                </member>
+                <member>
+                  <name>description</name>
+                  <value>
+                    <string>测试测试</string>
+                  </value>
+                </member>
+                <member>
+                  <name>title</name>
+                  <value>
+                    <string>第一个博客</string>
+                  </value>
+                </member>
+                <member>
+                  <name>categories</name>
+                  <value>
+                    <array>
+                      <data />
+                    </array>
+                  </value>
+                </member>
+                <member>
+                  <name>link</name>
+                  <value>
+                    <string>https://www.cnblogs.com/Wood1130/p/16748465.html</string>
+                  </value>
+                </member>
+                <member>
+                  <name>permalink</name>
+                  <value>
+                    <string>https://www.cnblogs.com/Wood1130/p/16748465.html</string>
+                  </value>
+                </member>
+                <member>
+                  <name>postid</name>
+                  <value>
+                    <i4>16748465</i4>
+                  </value>
+                </member>
+                <member>
+                  <name>mt_text_more</name>
+                  <value>
+                    <string></string>
+                  </value>
+                </member>
+                <member>
+                  <name>mt_excerpt</name>
+                  <value>
+                    <string></string>
+                  </value>
+                </member>
+              </struct>
+            </value>
+          </data>
+        </array>
+      </value>
+    </param>
+  </params>
+</methodResponse>

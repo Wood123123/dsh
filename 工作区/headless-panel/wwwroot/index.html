@@ -1,0 +1,800 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>无头端管理面板</title>
+<style>
+  :root {
+    --bg: #12140f; --card: #1b1e17; --card2: #23271d; --line: #33382a;
+    --fg: #e6e4d8; --dim: #9ba089; --ok: #7fc46b; --warn: #e0b655; --bad: #d96a5a;
+    --start: #6aa9d9; --accent: #c8b26a;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 24px; background: var(--bg); color: var(--fg);
+         font: 14px/1.5 "Segoe UI", "Microsoft YaHei", system-ui, sans-serif; }
+  h1 { font-size: 20px; margin: 0 0 4px; letter-spacing: .5px; }
+  h2 { font-size: 13px; margin: 26px 0 10px; color: var(--accent); font-weight: 600;
+       text-transform: uppercase; letter-spacing: 1px; }
+  .sub { color: var(--dim); font-size: 12px; margin-bottom: 18px; }
+  .bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+  button { background: var(--card2); color: var(--fg); border: 1px solid var(--line);
+           border-radius: 6px; padding: 7px 14px; font-size: 13px; cursor: pointer; transition: .15s; }
+  button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  button:disabled { opacity: .4; cursor: default; }
+  button.start:hover:not(:disabled) { border-color: var(--start); color: var(--start); }
+  button.danger:hover:not(:disabled) { border-color: var(--bad); color: var(--bad); }
+  .grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+          padding: 16px; position: relative; overflow: hidden; }
+  .card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--dim); }
+  .card.ready::before { background: var(--ok); }
+  .card.inraid::before { background: var(--warn); }
+  .card.starting::before { background: var(--start); }
+  .card.stuck::before { background: var(--bad); }
+  .card.stopped::before { background: var(--bad); }
+  .name { font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--dim); flex: 0 0 auto; }
+  .ready .dot { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+  .inraid .dot { background: var(--warn); box-shadow: 0 0 8px var(--warn); }
+  .starting .dot { background: var(--start); box-shadow: 0 0 8px var(--start); animation: pulse 1.1s infinite; }
+  .stopped .dot { background: var(--bad); }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
+  .pid { color: var(--dim); font-size: 11px; font-family: Consolas, monospace; margin: 6px 0 12px; word-break: break-all; }
+  .stat { display: flex; justify-content: space-between; font-size: 13px; padding: 3px 0; }
+  .stat span:last-child { color: var(--dim); }
+  .pill { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 20px; border: 1px solid currentColor; }
+  .pill.ok { color: var(--ok); } .pill.warn { color: var(--warn); }
+  .pill.bad { color: var(--bad); } .pill.start { color: var(--start); }
+  .actions { margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .empty { color: var(--dim); padding: 26px; text-align: center; border: 1px dashed var(--line); border-radius: 10px; }
+  .log { margin-top: 10px; background: #0d0f0a; border: 1px solid var(--line); border-radius: 6px;
+         padding: 10px; font: 12px/1.5 Consolas, monospace; color: var(--dim);
+         max-height: 170px; overflow: auto; white-space: pre-wrap; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); }
+  th { color: var(--dim); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: .5px; }
+  .muted { color: var(--dim); }
+  .warnbox { border: 1px solid var(--bad); color: var(--bad); border-radius: 8px;
+             padding: 10px 14px; margin-bottom: 16px; font-size: 13px; display: none; }
+
+  /* ── 遥测 ── */
+  .telem { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(430px, 1fr)); }
+  .tcard { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+  .tcard .head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .tcard .head .name { font-size: 15px; }
+  .kv { display: grid; grid-template-columns: repeat(auto-fit, minmax(88px, 1fr)); gap: 8px; margin-bottom: 10px; }
+  .kv .cell { background: var(--card2); border: 1px solid var(--line); border-radius: 7px; padding: 7px 9px; }
+  .kv .cell .k { font-size: 10px; color: var(--dim); text-transform: uppercase; letter-spacing: .5px; }
+  .kv .cell .v { font-size: 19px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.25; }
+  .kv .cell .v small { font-size: 11px; font-weight: 400; color: var(--dim); }
+  .chart { margin-top: 8px; }
+  .chart .cl { display: flex; justify-content: space-between; font-size: 11px; color: var(--dim); margin-bottom: 2px; }
+  .chart svg { display: block; width: 100%; height: 44px; background: #0d0f0a; border: 1px solid var(--line); border-radius: 6px; }
+  .bad { color: var(--bad); } .good { color: var(--ok); } .warnc { color: var(--warn); }
+  .raidrow { cursor: pointer; }
+  .raidrow:hover td { background: var(--card2); color: var(--accent); }
+  dialog { background: var(--card); color: var(--fg); border: 1px solid var(--line); border-radius: 12px;
+           padding: 20px; max-width: 900px; width: 92%; }
+  dialog::backdrop { background: rgba(0,0,0,.65); }
+  dialog h3 { margin: 0 0 4px; font-size: 17px; }
+  dialog .close { position: absolute; right: 14px; top: 12px; }
+  dialog .body { max-height: 68vh; overflow: auto; }
+</style>
+</head>
+<body>
+
+<h1>无头端管理面板</h1>
+<div class="sub">
+  Fika 状态为服务端内直读（不经 HTTP）
+  · 遥测由无头端插件每秒写入文件后读取
+  · <span id="updated" class="muted">尚未刷新</span>
+</div>
+
+<div id="fikaWarn" class="warnbox"></div>
+
+<div class="bar">
+  <button id="refresh">立即刷新</button>
+  <button id="auto">自动刷新：开</button>
+</div>
+
+<h2>无头客户端</h2>
+<div id="headless" class="grid"></div>
+
+<h2>实时遥测 · 帧数与 AI 数量趋势</h2>
+<div id="telemetry" class="telem"><div class="empty">加载中…</div></div>
+
+<h2>战局日志 <span class="muted" id="raidCount" style="font-size:11px"></span></h2>
+<div class="bar">
+  <label class="muted" style="font-size:12px">显示实例：</label>
+  <select id="raidPick" style="background:var(--card2);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:6px 10px"></select>
+  <button id="raidReload">刷新日志</button>
+</div>
+<div id="raids"><div class="empty">加载中…</div></div>
+
+<dialog id="raidDlg">
+  <button class="close" onclick="document.getElementById('raidDlg').close()">关闭</button>
+  <h3 id="dlgTitle">战局详情</h3>
+  <div class="muted" id="dlgSub" style="font-size:12px;margin-bottom:12px"></div>
+  <div class="body" id="dlgBody"></div>
+</dialog>
+
+<h2>在线玩家</h2>
+<div id="players"><div class="empty">加载中…</div></div>
+
+<h2>战局日志时间线 <span class="muted" id="tlCount" style="font-size:11px"></span></h2>
+<div class="bar">
+  <button id="tlReload">刷新战局</button>
+  <button id="tlToken">显示上报令牌</button>
+  <span class="muted" style="font-size:11px">
+    把 客户端 + 无头端 的日志按战局合并成一条时间线 · ★ 标注重连 · 断线重连的各段自动归为同一局
+  </span>
+</div>
+<div id="tlRaids"><div class="empty">加载中…</div></div>
+
+<dialog id="tlDlg">
+  <button class="close" onclick="document.getElementById('tlDlg').close()">关闭</button>
+  <h3 id="tlTitle">战局时间线</h3>
+  <div class="muted" id="tlSub" style="font-size:12px;margin-bottom:8px"></div>
+  <div class="bar" style="margin-bottom:8px">
+    <label class="muted" style="font-size:12px">来源</label>
+    <select id="tlFilter" style="background:var(--card2);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:5px 8px"></select>
+    <label class="muted" style="font-size:12px"><input type="checkbox" id="tlOnlyErr"> 只看错误/警告</label>
+    <input id="tlSearch" placeholder="关键字过滤…" style="background:var(--card2);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:5px 8px;min-width:180px">
+  </div>
+  <div class="body"><div id="tlLines" class="log" style="max-height:60vh"></div></div>
+</dialog>
+
+<h2>操作审计 <span class="muted" id="auditCount" style="font-size:11px"></span></h2>
+<div class="bar">
+  <button id="auditReload">刷新审计</button>
+  <label class="muted" style="font-size:12px">显示</label>
+  <select id="auditLimit" style="background:var(--card2);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:6px 10px">
+    <option value="50">最近 50 条</option>
+    <option value="200" selected>最近 200 条</option>
+    <option value="500">最近 500 条</option>
+  </select>
+  <span class="muted" style="font-size:11px">（记录保存在服务端 audit.jsonl，按时间倒序，重启后仍在）</span>
+</div>
+<div id="audit"><div class="empty">加载中…</div></div>
+
+<h2>日志</h2>
+<div id="log" class="log">就绪。</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let autoTimer = null;
+
+function log(msg) {
+  const el = $('log');
+  el.textContent = `[${new Date().toLocaleTimeString()}] ${msg}\n` + el.textContent;
+  if (el.textContent.length > 8000) el.textContent = el.textContent.slice(0, 8000);
+}
+
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+const STATUS = {
+  ready:    { text: '就绪',     pill: 'ok',    cls: 'ready' },
+  inraid:   { text: '战局中',   pill: 'warn',  cls: 'inraid' },
+  starting: { text: '启动中',   pill: 'start', cls: 'starting' },
+  stuck:    { text: '启动异常', pill: 'bad',   cls: 'stuck' },
+  stopped:  { text: '已停止',   pill: 'bad',   cls: 'stopped' }
+};
+
+function renderHeadless(list, allowStart) {
+  const host = $('headless');
+  if (!list || !list.length) {
+    host.innerHTML = '<div class="empty">配置里没有无头端实例。请编辑 mod 的 config.json。</div>';
+    return;
+  }
+
+  host.innerHTML = list.map(h => {
+    const meta = STATUS[h.status] || STATUS.stopped;
+    const players = h.players || 0;
+    const busy = h.status === 'inraid';
+    const cooldown = h.cooldownSeconds || 0;
+    const procs = h.processes || [];
+
+    const startDisabled = !allowStart || !h.enabled || busy ||
+                          h.status === 'ready' || h.status === 'starting' || cooldown > 0;
+    const restartDisabled = h.status !== 'ready' && h.status !== 'inraid';
+    const stopDisabled = h.status === 'stopped';
+
+    let hint = '';
+    if (cooldown > 0) hint = `冷却中，还需 ${cooldown}s`;
+    else if (!h.enabled) hint = '已在 config.json 里禁用';
+    else if (busy) hint = '战局中，重启会中断本局';
+    else if (h.status === 'stuck')
+      hint = `进程已存在 ${Math.round((h.startingSeconds || 0) / 60)} 分钟但仍未连上服务端 —— 通常是管理器已退出、游戏进程成了孤儿。点「关闭」清理后再「启动」。`;
+    else if (h.status === 'starting')
+      hint = `已启动 ${h.startingSeconds || 0}s，正在初始化（约需 2-3 分钟）`;
+
+    const procLine = procs.length
+      ? procs.map(p => `${escapeHtml(p.name)}#${p.pid}`).join('　')
+      : '';
+
+    return `
+      <div class="card ${meta.cls}">
+        <div class="name">
+          <span class="dot"></span>${escapeHtml(h.name || '(未命名)')}
+          <span class="pill ${meta.pill}">${meta.text}</span>
+        </div>
+        <div class="pid">${escapeHtml(h.profileId || '')}</div>
+        <div class="stat"><span>战局内玩家</span><span>${players}</span></div>
+        <div class="stat"><span>Socket</span><span>${h.socketOpen ? '已连接' : '—'}</span></div>
+        ${procLine ? `<div class="stat"><span>进程</span><span>${procLine}</span></div>` : ''}
+        <div class="actions">
+          <button class="start" data-act="start" data-id="${escapeHtml(h.profileId)}"
+                  ${startDisabled ? 'disabled' : ''}>启动</button>
+          <button data-act="restart" data-id="${escapeHtml(h.profileId)}"
+                  ${restartDisabled ? 'disabled' : ''}
+                  title="${busy ? '战局中，重启会中断本局' : ''}">重启</button>
+          <button class="danger" data-act="stop" data-id="${escapeHtml(h.profileId)}"
+                  ${stopDisabled ? 'disabled' : ''}
+                  title="强制结束该实例的所有进程（先杀管理器，防止它再把游戏拉起来）">关闭</button>
+        </div>
+        ${hint ? `<div class="muted" style="font-size:11px;margin-top:8px;line-height:1.5">${hint}</div>` : ''}
+      </div>`;
+  }).join('');
+
+  host.querySelectorAll('[data-act]').forEach(b =>
+    b.addEventListener('click', () => act(b.dataset.act, b.dataset.id, b)));
+}
+
+async function act(kind, profileId, btn) {
+  const label = { start: '启动', restart: '重启', stop: '关闭' }[kind] || kind;
+
+  if (kind === 'restart' && !confirm(`确认重启无头端 ${profileId} ？\n战局中的玩家会被中断。`)) return;
+  if (kind === 'stop' && !confirm(`确认强制关闭无头端 ${profileId} ？\n会结束它的管理器与游戏进程。`)) return;
+
+  btn.disabled = true;
+  const old = btn.textContent;
+  btn.textContent = label + '中…';
+  log(`请求${label} ${profileId}`);
+  try {
+    const r = await fetch(`/headlesspanel/api/${kind}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ profileId })
+    });
+    const j = await r.json().catch(() => ({}));
+    if (j.ok) {
+      if (kind === 'start') log(`✅ 已拉起管理器：${profileId}（初始化约 2-3 分钟）`);
+      else if (kind === 'stop') log(`✅ ${j.message || '已关闭'}：${profileId}`);
+      else log(`✅ 已发送重启指令：${profileId}`);
+    } else {
+      log(`❌ ${label}失败：${j.error || j.detail || ('HTTP ' + r.status)}`);
+    }
+  } catch (e) {
+    log('❌ 请求异常：' + e.message);
+  }
+  btn.textContent = old;
+  setTimeout(refresh, 800);
+}
+
+function renderPlayers(data) {
+  const list = (data && data.players) || [];
+  const host = $('players');
+  if (!list.length) {
+    host.innerHTML = '<div class="empty">当前没有在线玩家</div>';
+    return;
+  }
+
+  const rows = list.map(p => `<tr>
+      <td>${escapeHtml(p.nickname || '(未知)')}</td>
+      <td>${p.level ?? '—'}</td>
+      <td>${escapeHtml(p.activityText || '—')}</td>
+      <td>${escapeHtml(p.locationText || '—')}</td>
+    </tr>`).join('');
+
+  host.innerHTML = `<table>
+      <thead><tr><th>玩家</th><th>等级</th><th>状态</th><th>地图</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+// ─────────────────────────────────────────── 遥测
+
+const MAPNAME = {
+  bigmap: '海关', factory4_day: '工厂（白天）', factory4_night: '工厂（夜间）',
+  interchange: '立交桥', laboratory: '实验室', labyrinth: '迷宫', lighthouse: '灯塔',
+  rezervbase: '储备站', sandbox: '中心区', sandbox_high: '中心区（高层）',
+  shoreline: '海岸线', tarkovstreets: '塔科夫街区', woods: '森林', hideout: '藏身处'
+};
+const mapName = (s) => !s ? '—' : (MAPNAME[String(s).toLowerCase()] || s);
+
+/** 极简 sparkline：把一组数值画成 SVG 折线 + 填充。 */
+function sparkline(values, opts) {
+  opts = opts || {};
+  const w = 300, h = opts.height || 44, pad = 3;
+  if (!values || values.length < 2) return `<svg viewBox="0 0 ${w} ${h}"></svg>`;
+
+  let min = opts.min !== undefined ? opts.min : Math.min.apply(null, values);
+  let max = Math.max.apply(null, values);
+  if (max - min < 1e-6) { max = min + 1; }
+
+  const n = values.length;
+  const x = i => pad + (i * (w - pad * 2)) / (n - 1);
+  const y = v => h - pad - ((v - min) / (max - min)) * (h - pad * 2);
+
+  const pts = values.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+  const area = `${x(0).toFixed(1)},${h - pad} ${pts} ${x(n - 1).toFixed(1)},${h - pad}`;
+  const color = opts.color || '#7fc46b';
+
+  return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+    <polygon points="${area}" fill="${color}" opacity="0.13"/>
+    <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.6"
+              stroke-linejoin="round" stroke-linecap="round"/>
+  </svg>`;
+}
+
+function fpsClass(v) { return v >= 45 ? 'good' : (v >= 25 ? 'warnc' : 'bad'); }
+
+function renderTelemetry(data) {
+  const host = $('telemetry');
+  const list = (data && data.instances) || [];
+  if (!list.length) {
+    host.innerHTML = '<div class="empty">配置里没有无头端实例。</div>';
+    return;
+  }
+
+  host.innerHTML = list.map(it => {
+    const p = it.payload;
+    if (!it.available || !p) {
+      return `<div class="tcard">
+        <div class="head"><span class="name">${escapeHtml(it.name || '(未命名)')}</span>
+          <span class="pill bad">无遥测</span></div>
+        <div class="muted" style="font-size:12px">
+          读不到 <code>${escapeHtml(it.instanceDir || '')}\BepInEx\config\headless-telemetry\live.json</code>。<br>
+          可能原因：无头端没启动 · 没装 HeadlessTelemetry 插件 · 目录名与 workingDirectory 不一致。
+        </div>
+      </div>`;
+    }
+
+    const c = p.current || {};
+    const trend = p.trend || [];
+    const fpsArr = trend.map(t => t[1]);
+    const aiArr = trend.map(t => t[2]);
+    const huArr = trend.map(t => t[3]);
+    const clArr = trend.map(t => t[4]);
+
+    const staleTag = it.stale
+      ? `<span class="pill bad">数据陈旧 ${it.ageSeconds != null ? it.ageSeconds : '?'}s</span>`
+      : `<span class="pill ok">实时</span>`;
+
+    const raidTag = c.inRaid
+      ? `<span class="pill warn">${escapeHtml(mapName(c.map))}</span>`
+      : `<span class="pill">不在战局</span>`;
+
+    const raidSec = c.raidSeconds
+      ? `${Math.floor(c.raidSeconds / 60)}:${String(Math.floor(c.raidSeconds % 60)).padStart(2, '0')}`
+      : '—';
+
+    let cur = '';
+    if (p.currentRaid) {
+      const r = p.currentRaid;
+      cur = `<div class="muted" style="font-size:11px;margin-top:8px">
+        本局进行中：${escapeHtml(mapName(r.map))} · 采样 ${r.samples} 点 ·
+        平均 ${Math.round(r.fpsAvg)} FPS · 最低 ${Math.round(r.fpsMin)} · AI 峰值 ${r.aiMax}
+      </div>`;
+    }
+
+    return `<div class="tcard">
+      <div class="head">
+        <span class="name">${escapeHtml(it.name || '(未命名)')}</span>
+        ${staleTag} ${raidTag}
+      </div>
+
+      <div class="kv">
+        <div class="cell"><div class="k">FPS</div>
+          <div class="v ${fpsClass(c.fps || 0)}">${c.fps != null ? c.fps : '—'}</div></div>
+        <div class="cell"><div class="k">AI 存活</div>
+          <div class="v">${c.aiAlive || 0}<small> / ${c.aiTotal || 0}</small></div></div>
+        <div class="cell"><div class="k">玩家</div>
+          <div class="v">${c.humansAlive || 0}<small> / ${c.humans || 0}</small></div></div>
+        <div class="cell"><div class="k">连接</div>
+          <div class="v">${c.clients || 0}</div></div>
+        <div class="cell"><div class="k">战局时长</div>
+          <div class="v" style="font-size:15px">${raidSec}</div></div>
+        <div class="cell"><div class="k">内存</div>
+          <div class="v" style="font-size:15px">${c.memMb != null ? c.memMb : '—'}<small> MB</small></div></div>
+      </div>
+
+      <div class="chart">
+        <div class="cl"><span>帧数趋势（${trend.length} 点）</span>
+          <span>${fpsArr.length ? Math.min.apply(null, fpsArr) + ' – ' + Math.max.apply(null, fpsArr) : ''}</span></div>
+        ${sparkline(fpsArr, { color: '#7fc46b' })}
+      </div>
+
+      <div class="chart">
+        <div class="cl"><span>AI 存活趋势</span>
+          <span>${aiArr.length ? Math.min.apply(null, aiArr) + ' – ' + Math.max.apply(null, aiArr) : ''}</span></div>
+        ${sparkline(aiArr, { color: '#e0b655', min: 0 })}
+      </div>
+
+      <div class="chart">
+        <div class="cl"><span>玩家存活</span>
+          <span>峰值 ${huArr.length ? Math.max.apply(null, huArr) : 0} · 连接 ${clArr.length ? Math.max.apply(null, clArr) : 0}</span></div>
+        ${sparkline(huArr, { color: '#6aa9d9', min: 0 })}
+      </div>
+      ${cur}
+    </div>`;
+  }).join('');
+}
+
+// ─────────────────────────────────────────── 战局日志
+
+let raidProfiles = [];
+let raidTimer = null;
+
+async function loadTelemetry() {
+  try {
+    const r = await fetch('/headlesspanel/api/telemetry');
+    if (!r.ok) return;
+    const data = await r.json();
+    renderTelemetry(data);
+
+    const pick = $('raidPick');
+    const list = (data.instances || []).map(i => ({ id: i.profileId, name: i.name || i.profileId }));
+    if (JSON.stringify(list) !== JSON.stringify(raidProfiles)) {
+      raidProfiles = list;
+      const keep = pick.value;
+      pick.innerHTML = list.map(i => `<option value="${escapeHtml(i.id)}">${escapeHtml(i.name)}</option>`).join('');
+      if (keep && list.some(i => i.id === keep)) pick.value = keep;
+    }
+  } catch (e) {
+    $('telemetry').innerHTML = '<div class="empty">遥测读取失败：' + escapeHtml(e.message) + '</div>';
+  }
+}
+
+async function loadRaids() {
+  const id = $('raidPick').value;
+  if (!id) { $('raids').innerHTML = '<div class="empty">没有可选的实例</div>'; return; }
+
+  try {
+    const r = await fetch('/headlesspanel/api/raids?profileId=' + encodeURIComponent(id));
+    const j = await r.json();
+    if (!j.ok) { $('raids').innerHTML = '<div class="empty">' + escapeHtml(j.error || '读取失败') + '</div>'; return; }
+
+    $('raidCount').textContent = `（共 ${j.count} 份 · 上限 20 份，超出自动删最老）`;
+    const list = j.raids || [];
+    if (!list.length) {
+      $('raids').innerHTML = '<div class="empty">还没有战局日志。打完一局后这里会出现。</div>';
+      return;
+    }
+
+    const rows = list.map((x, idx) => {
+      const s = x.summary || {};
+      const when = s.startedUtc ? new Date(s.startedUtc).toLocaleString() : '—';
+      const dur = s.durationSec
+        ? `${Math.floor(s.durationSec / 60)}分${Math.round(s.durationSec % 60)}秒` : '—';
+      return `<tr class="raidrow" data-file="${escapeHtml(x.file)}" data-idx="${idx}">
+        <td>${escapeHtml(when)}</td>
+        <td>${escapeHtml(mapName(s.map))}</td>
+        <td>${escapeHtml(dur)}</td>
+        <td>${s.samples != null ? s.samples : '—'}</td>
+        <td class="${fpsClass(s.fpsAvg || 0)}">${s.fpsAvg != null ? Math.round(s.fpsAvg) : '—'}</td>
+        <td>${s.fpsMin != null ? Math.round(s.fpsMin) : '—'}</td>
+        <td>${s.aiMax != null ? s.aiMax : '—'}</td>
+        <td>${s.humansMax != null ? s.humansMax : '—'}</td>
+        <td class="muted">${Math.round((x.sizeBytes || 0) / 1024)} KB</td>
+      </tr>`;
+    }).join('');
+
+    $('raids').innerHTML = `<table>
+      <thead><tr><th>开始时间</th><th>地图</th><th>时长</th><th>采样点</th>
+        <th>平均FPS</th><th>最低FPS</th><th>AI峰值</th><th>玩家峰值</th><th>大小</th></tr></thead>
+      <tbody>${rows}</tbody></table>`;
+
+    $('raids').querySelectorAll('.raidrow').forEach(tr =>
+      tr.addEventListener('click', () => openRaid(id, tr.dataset.file)));
+  } catch (e) {
+    $('raids').innerHTML = '<div class="empty">错误：' + escapeHtml(e.message) + '</div>';
+  }
+}
+
+async function openRaid(profileId, file) {
+  const dlg = $('raidDlg');
+  $('dlgTitle').textContent = '加载中…';
+  $('dlgSub').textContent = file;
+  $('dlgBody').innerHTML = '';
+  dlg.showModal();
+
+  try {
+    const r = await fetch(`/headlesspanel/api/raid?profileId=${encodeURIComponent(profileId)}&file=${encodeURIComponent(file)}`);
+    const j = await r.json();
+    if (!j.ok) { $('dlgTitle').textContent = '读取失败'; $('dlgSub').textContent = j.error || ''; return; }
+
+    const p = j.payload;
+    const st = p.stats || {};
+    const series = p.series || [];
+    const fpsArr = series.map(t => t[1]);
+    const aiArr = series.map(t => t[2]);
+    const huArr = series.map(t => t[3]);
+    const clArr = series.map(t => t[4]);
+
+    $('dlgTitle').textContent = `${mapName(p.map)} · ${new Date(p.startedUtc).toLocaleString()}`;
+    $('dlgSub').textContent =
+      `时长 ${Math.round(p.durationSec)}s · 采样 ${p.samples} 点 · ` +
+      `FPS 平均 ${Math.round(st.fpsAvg)} / 最低 ${Math.round(st.fpsMin)} / 最高 ${Math.round(st.fpsMax)} · ` +
+      `AI 峰值 ${st.aiMax} · 玩家峰值 ${st.humansMax}`;
+
+    $('dlgBody').innerHTML = `
+      <div class="chart"><div class="cl"><span>帧数</span><span>${Math.round(st.fpsMin)} – ${Math.round(st.fpsMax)}</span></div>
+        ${sparkline(fpsArr, { color: '#7fc46b', height: 70 })}</div>
+      <div class="chart"><div class="cl"><span>AI 存活</span><span>峰值 ${st.aiMax}</span></div>
+        ${sparkline(aiArr, { color: '#e0b655', height: 70, min: 0 })}</div>
+      <div class="chart"><div class="cl"><span>玩家存活</span><span>峰值 ${st.humansMax}</span></div>
+        ${sparkline(huArr, { color: '#6aa9d9', height: 70, min: 0 })}</div>
+      <div class="chart"><div class="cl"><span>客户端连接</span><span>峰值 ${st.clientsMax != null ? st.clientsMax : '—'}</span></div>
+        ${sparkline(clArr, { color: '#c8b26a', height: 70, min: 0 })}</div>`;
+  } catch (e) {
+    $('dlgTitle').textContent = '异常';
+    $('dlgSub').textContent = e.message;
+  }
+}
+
+// ─────────────────────────────────────────── 操作审计
+
+// ─────────────────────────────────────────── 战局日志时间线
+
+let tlCurrent = null;   // { key, lines, instances }
+
+const ROLE_COLOR = { client: '#6aa9d9', headless: '#e0b655', server: '#c8b26a', unknown: '#9ba089' };
+
+// ★ 从实例名推断角色 —— 服务端那一端没有独立的段，只能靠名字认。
+function ROLE_OF(name) {
+  const s = (name || '').toLowerCase();
+  if (s.indexOf('spt-server') >= 0 || s === 'server') return 'server';
+  if (s.indexOf('headless') >= 0) return 'headless';
+  if (s.indexOf('client') >= 0 || s.indexOf('wood') >= 0) return 'client';
+  return 'unknown';
+}
+
+// ★ SPT 服务端那一端用固定颜色，方便在时间线里一眼认出
+const SERVER_COLOR = '#c8b26a';
+
+async function loadTimelineRaids() {
+  try {
+    const r = await fetch('/headlesspanel/api/logs/raids?limit=100');
+    const j = await r.json();
+    if (!j.ok) { $('tlRaids').innerHTML = '<div class="empty">' + escapeHtml(j.error || '读取失败') + '</div>'; return; }
+
+    $('tlCount').textContent = `（${j.count} 局 · 存储于 ${j.root}）`;
+    const list = j.raids || [];
+    if (!list.length) {
+      $('tlRaids').innerHTML = '<div class="empty">还没有日志。确认各端已装 LogShipper 且 Token 已配置。</div>';
+      return;
+    }
+
+    const rows = list.map(g => {
+      const when = new Date(g.startedUtc).toLocaleString();
+      const dur = g.durationSec != null
+        ? `${Math.floor(g.durationSec / 60)}分${Math.round(g.durationSec % 60)}秒` : '进行中';
+      const rc = g.hasReconnect
+        ? `<span class="pill warn">★ 重连 ${g.reconnectCount} 次</span>` : '';
+
+      // ★ 用【本局各端实际贡献的行数】显示来源。
+      //   SPT 服务端日志会并入客户端/无头端建立的段，只用 segments 是看不到它的。
+      const srcList = (g.sources && g.sources.length)
+        ? g.sources
+        : (g.segments || []).map(s => ({ instance: s.instance, lines: s.lines }));
+      const segs = srcList.map(s => {
+        const role = ROLE_OF(s.instance);
+        const color = ROLE_COLOR[role] || '#9ba089';
+        const n = (s.lines != null ? `<span class="muted" style="font-size:10px"> ${s.lines}</span>` : '');
+        return `<span class="pill" style="color:${color}" title="${escapeHtml(s.instance)}">`
+             + `${escapeHtml(s.instance)}${n}</span>`;
+      }).join(' ');
+
+      return `<tr class="raidrow" data-key="${escapeHtml(g.key)}">
+        <td style="white-space:nowrap">${escapeHtml(when)}</td>
+        <td>${escapeHtml(g.mapText || g.map || '—')}</td>
+        <td class="muted" style="font-size:11px">${escapeHtml(g.raidCode || '—')}</td>
+        <td>${escapeHtml(dur)}</td>
+        <td>${segs}</td>
+        <td class="${g.errors > 0 ? 'bad' : 'muted'}">${g.errors}</td>
+        <td class="${g.warnings > 0 ? 'warnc' : 'muted'}">${g.warnings}</td>
+        <td>${rc}</td>
+      </tr>`;
+    }).join('');
+
+    $('tlRaids').innerHTML = `<table>
+      <thead><tr><th>开始时间</th><th>地图</th><th>Raid Code</th><th>时长</th>
+        <th>来源</th><th>错误</th><th>警告</th><th>备注</th></tr></thead>
+      <tbody>${rows}</tbody></table>`;
+
+    $('tlRaids').querySelectorAll('.raidrow').forEach(tr =>
+      tr.addEventListener('click', () => openTimeline(tr.dataset.key)));
+  } catch (e) {
+    $('tlRaids').innerHTML = '<div class="empty">错误：' + escapeHtml(e.message) + '</div>';
+  }
+}
+
+async function openTimeline(key) {
+  const dlg = $('tlDlg');
+  $('tlTitle').textContent = '加载中…';
+  $('tlSub').textContent = '';
+  $('tlLines').innerHTML = '';
+  dlg.showModal();
+
+  try {
+    const r = await fetch('/headlesspanel/api/logs/timeline?key=' + encodeURIComponent(key) + '&max=8000');
+    const j = await r.json();
+    if (!j.ok) { $('tlTitle').textContent = '读取失败'; $('tlSub').textContent = j.error || ''; return; }
+
+    tlCurrent = { key, lines: j.lines || [], instances: j.instances || [] };
+
+    $('tlTitle').textContent = `${j.mapText || j.map || '未知地图'} · ${new Date(j.startedUtc).toLocaleString()}`;
+    $('tlSub').textContent =
+      `${j.totalLines} 行${j.truncated ? '（已截断显示）' : ''} · 错误 ${j.errors} · 警告 ${j.warnings}` +
+      (j.hasReconnect ? ` · ★ 重连 ${j.reconnectCount} 次` : '') +
+      (j.raidCode ? ` · Raid Code ${j.raidCode}` : '') +
+      (j.endedUtc ? ` · 结束 ${new Date(j.endedUtc).toLocaleTimeString()}` : ' · 进行中');
+
+    const sel = $('tlFilter');
+    sel.innerHTML = '<option value="">全部来源</option>' +
+      tlCurrent.instances.map(i =>
+        `<option value="${escapeHtml(i.instance)}">${escapeHtml(i.instance)} (${escapeHtml(i.role)})</option>`).join('');
+
+    renderTimeline();
+  } catch (e) {
+    $('tlTitle').textContent = '异常';
+    $('tlSub').textContent = e.message;
+  }
+}
+
+function renderTimeline() {
+  if (!tlCurrent) return;
+  const onlyErr = $('tlOnlyErr').checked;
+  const src = $('tlFilter').value;
+  const q = $('tlSearch').value.trim().toLowerCase();
+
+  const rows = tlCurrent.lines.filter(l => {
+    if (src && l.instance !== src) return false;
+    if (onlyErr && l.level !== 'Error' && l.level !== 'Warning') return false;
+    if (q && (l.text || '').toLowerCase().indexOf(q) < 0) return false;
+    return true;
+  });
+
+  const host = $('tlLines');
+  if (!rows.length) { host.innerHTML = '<div class="muted">没有匹配的行</div>'; return; }
+
+  // ★ 合并时间线：每行前面标来源（按角色着色），级别决定行色
+  //   来源取自【行本身】（后端已填真实来源），所以 SPT-Server 会单独显示出来。
+  host.innerHTML = rows.map(l => {
+    const t = new Date(l.utc);
+    const hh = String(t.getHours()).padStart(2, '0') + ':' +
+               String(t.getMinutes()).padStart(2, '0') + ':' +
+               String(t.getSeconds()).padStart(2, '0');
+    const role = ROLE_OF(l.instance);
+    const color = ROLE_COLOR[role] || '#9ba089';
+    const lv = l.level === 'Error' ? 'color:var(--bad)'
+             : l.level === 'Warning' ? 'color:var(--warn)'
+             : l.level === 'Debug' ? 'color:#6b7060' : '';
+    const mark = (l.text || '').indexOf('★') >= 0 ? 'background:rgba(200,178,106,.10);' : '';
+    // ★ 服务端那一端加个标记，避免和它并入的段混淆
+    const tag = role === 'server' ? ' ⚙' : '';
+    return `<div style="${lv};${mark}"><span class="muted">${hh}</span> `
+         + `<span style="color:${color}">[${escapeHtml(l.instance)}${tag}]</span> `
+         + `${escapeHtml(l.text)}</div>`;
+  }).join('');
+}
+
+async function showToken() {
+  try {
+    const r = await fetch('/headlesspanel/api/logs/token');
+    const j = await r.json();
+    if (!j.ok) { log('读取令牌失败：' + (j.error || '')); return; }
+    log('★★★ LogShipper 令牌 = ' + j.token);
+    log('    填到各端的 BepInEx\\config\\com.dsh.logshipper.cfg 的 General/Token');
+    log('    日志存储目录：' + j.root);
+    alert('上报令牌（填到各端 com.dsh.logshipper.cfg 的 Token 项）：\n\n' + j.token);
+  } catch (e) { log('异常：' + e.message); }
+}
+
+async function loadAudit() {
+  const limit = $('auditLimit').value || 200;
+  try {
+    const r = await fetch('/headlesspanel/api/audit?limit=' + encodeURIComponent(limit));
+    const j = await r.json();
+    if (!j.ok) { $('audit').innerHTML = '<div class="empty">' + escapeHtml(j.error || '读取失败') + '</div>'; return; }
+
+    $('auditCount').textContent = `（共保存 ${j.total} 条，上限 2000，超出自动裁剪）`;
+    const list = j.entries || [];
+    if (!list.length) {
+      $('audit').innerHTML = '<div class="empty">还没有操作记录。启动 / 关闭 / 重启无头端后会记录在这里。</div>';
+      return;
+    }
+
+    const rows = list.map(e => {
+      const when = e.utc ? new Date(e.utc).toLocaleString() : '—';
+      const who = e.account ? `${escapeHtml(e.account)}` : '<span class="muted">—</span>';
+      const res = e.ok
+        ? '<span class="pill ok">成功</span>'
+        : '<span class="pill bad">失败</span>';
+      return `<tr>
+        <td class="muted" style="white-space:nowrap">${escapeHtml(when)}</td>
+        <td style="white-space:nowrap"><code>${escapeHtml(e.ip || '—')}</code></td>
+        <td style="white-space:nowrap">${who}</td>
+        <td style="white-space:nowrap">${escapeHtml(e.actionText || e.action || '')}</td>
+        <td>${escapeHtml(e.instance || '—')}</td>
+        <td class="muted" style="font-size:11px">${escapeHtml((e.profileId || '').slice(0, 12))}</td>
+        <td>${res}</td>
+        <td class="muted">${escapeHtml(e.detail || '')}</td>
+      </tr>`;
+    }).join('');
+
+    $('audit').innerHTML = `<table>
+      <thead><tr><th>时间</th><th>来源 IP</th><th>账号</th><th>操作</th>
+        <th>实例</th><th>profileId</th><th>结果</th><th>详情</th></tr></thead>
+      <tbody>${rows}</tbody></table>`;
+  } catch (e) {
+    $('audit').innerHTML = '<div class="empty">错误：' + escapeHtml(e.message) + '</div>';
+  }
+}
+
+async function refresh() {
+  $('updated').textContent = '刷新中…';
+  try {
+    const r = await fetch('/headlesspanel/api/list', { headers: { 'Accept': 'application/json' } });
+    if (r.status === 401 || r.status === 302 || r.redirected) {
+      $('headless').innerHTML = '<div class="empty">未登录或会话已过期，请先登录 SPT Web（<a href="/login">/login</a>）后刷新本页。</div>';
+      $('updated').textContent = '需要登录';
+      return;
+    }
+    const data = await r.json();
+    renderHeadless(data.headlessClients || [], data.allowStart !== false);
+
+    const warn = $('fikaWarn');
+    if (data.fikaLoaded === false) {
+      warn.style.display = 'block';
+      warn.textContent = '⚠ 没有在服务端里找到 Fika（PresenceService / HeadlessService 均未加载）。面板只能显示进程状态，无法显示连接状态与地图。';
+    } else {
+      warn.style.display = 'none';
+    }
+  } catch (e) {
+    $('headless').innerHTML = '<div class="empty">读取失败：' + escapeHtml(e.message) + '</div>';
+  }
+
+  await loadTelemetry();
+
+  try {
+    const r2 = await fetch('/headlesspanel/api/players');
+    if (r2.ok) renderPlayers(await r2.json());
+  } catch { /* 玩家列表失败不影响主功能 */ }
+
+  $('updated').textContent = '最后更新 ' + new Date().toLocaleTimeString();
+}
+
+function setAuto(on) {
+  if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
+  if (raidTimer) { clearInterval(raidTimer); raidTimer = null; }
+
+  if (on) {
+    autoTimer = setInterval(refresh, 5000);
+    raidTimer = setInterval(loadRaids, 15000);
+  }
+  $('auto').textContent = '自动刷新：' + (on ? '开' : '关');
+}
+
+$('refresh').addEventListener('click', refresh);
+$('auto').addEventListener('click', () => setAuto(!autoTimer));
+$('raidReload').addEventListener('click', loadRaids);
+$('raidPick').addEventListener('change', loadRaids);
+$('auditReload').addEventListener('click', loadAudit);
+$('auditLimit').addEventListener('change', loadAudit);
+$('tlReload').addEventListener('click', loadTimelineRaids);
+$('tlToken').addEventListener('click', showToken);
+$('tlFilter').addEventListener('change', renderTimeline);
+$('tlOnlyErr').addEventListener('change', renderTimeline);
+$('tlSearch').addEventListener('input', renderTimeline);
+
+setAuto(true);
+refresh().then(loadRaids).then(loadAudit).then(loadTimelineRaids);
+</script>
+</body>
+</html>

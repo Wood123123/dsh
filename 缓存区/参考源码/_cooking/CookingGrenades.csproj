@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>CookingGrenades</AssemblyName>
+    <GenerateAssemblyInfo>False</GenerateAssemblyInfo>
+    <TargetFramework>net40</TargetFramework>
+  </PropertyGroup>
+  <PropertyGroup>
+    <LangVersion>14.0</LangVersion>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <CheckForOverflowUnderflow>False</CheckForOverflowUnderflow>
+  </PropertyGroup>
+  <PropertyGroup>
+    <RootNamespace />
+  </PropertyGroup>
+  <ItemGroup>
+    <None Remove="CookingGrenades.CookingGrenades.Resources.Indicators.Grey.png" />
+    <None Remove="CookingGrenades.CookingGrenades.Resources.Indicators.Red.png" />
+    <None Remove="CookingGrenades.CookingGrenades.Resources.Indicators.Yellow.png" />
+    <EmbeddedResource Include="CookingGrenades.CookingGrenades.Resources.Indicators.Grey.png" LogicalName="CookingGrenades.CookingGrenades.Resources.Indicators.Grey.png" />
+    <EmbeddedResource Include="CookingGrenades.CookingGrenades.Resources.Indicators.Red.png" LogicalName="CookingGrenades.CookingGrenades.Resources.Indicators.Red.png" />
+    <EmbeddedResource Include="CookingGrenades.CookingGrenades.Resources.Indicators.Yellow.png" LogicalName="CookingGrenades.CookingGrenades.Resources.Indicators.Yellow.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="BepInEx" />
+    <Reference Include="UnityEngine.CoreModule" />
+    <Reference Include="UnityEngine.UIModule" />
+    <Reference Include="UnityEngine.UI" />
+    <Reference Include="Assembly-CSharp" />
+    <Reference Include="Unity.TextMeshPro" />
+    <Reference Include="System.Core" />
+    <Reference Include="0Harmony" />
+    <Reference Include="spt-reflection" />
+    <Reference Include="UnityEngine.PhysicsModule" />
+    <Reference Include="AnimationSystem.Types" />
+    <Reference Include="UnityEngine.ImageConversionModule" />
+    <Reference Include="Comfort" />
+    <Reference Include="UnityEngine.InputLegacyModule" />
+    <Reference Include="UnityEngine.IMGUIModule" />
+  </ItemGroup>
+</Project>

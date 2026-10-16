@@ -1,0 +1,76 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Library</OutputType>
+    <AssemblyName>HeadlessPanel</AssemblyName>
+    <RootNamespace>Dsh.HeadlessPanel</RootNamespace>
+    <Version>1.0.0</Version>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <DebugType>none</DebugType>
+    <NoWarn>$(NoWarn);CS1591;CS8618;CS8625;CS0436;NU1701</NoWarn>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+    <!-- Point this at any SPT 4.1.6 install; server and client ship identical assemblies. -->
+    <SPT_DIR Condition="'$(SPT_DIR)' == ''">F:\EFT\SPT_Runtime</SPT_DIR>
+    <DeployToGame Condition="'$(DeployToGame)' == ''">false</DeployToGame>
+    <ServerModsDir Condition="'$(ServerModsDir)' == ''">$(SPT_DIR)\user\mods</ServerModsDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- ControllerBase / [Authorize] live in the ASP.NET Core shared framework. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="SPTarkov.Server.Core">
+      <HintPath>$(SPT_DIR)\SPTarkov.Server.Core.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="SPTarkov.Server.Web">
+      <HintPath>$(SPT_DIR)\SPTarkov.Server.Web.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="SPTarkov.DI">
+      <HintPath>$(SPT_DIR)\SPTarkov.DI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="SPTarkov.Common">
+      <HintPath>$(SPT_DIR)\SPTarkov.Common.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="SemanticVersioning">
+      <HintPath>$(SPT_DIR)\SemanticVersioning.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="wwwroot\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <!-- Deploy straight into the SPT server's mod folder. -->
+  <Target Name="DeployMod" AfterTargets="Build" Condition="'$(DeployToGame)' == 'true'">
+    <PropertyGroup>
+      <DevModDir>$(ServerModsDir)\HeadlessPanel</DevModDir>
+    </PropertyGroup>
+    <MakeDir Directories="$(DevModDir)" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(DevModDir)" />
+    <Copy SourceFiles="$(TargetDir)HeadlessPanel.deps.json" DestinationFolder="$(DevModDir)"
+          Condition="Exists('$(TargetDir)HeadlessPanel.deps.json')" />
+    <ItemGroup>
+      <WwwFiles Include="$(ProjectDir)wwwroot\**\*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(WwwFiles)" DestinationFiles="@(WwwFiles->'$(DevModDir)\wwwroot\%(RecursiveDir)%(Filename)%(Extension)')"
+          Condition="'@(WwwFiles)' != ''" />
+    <Message Importance="high" Text="[HeadlessPanel] deployed to $(DevModDir)" />
+  </Target>
+
+</Project>

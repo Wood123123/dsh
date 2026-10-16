@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <AssemblyName>NekoParty.Server.GroupEX</AssemblyName>
+    <GenerateAssemblyInfo>False</GenerateAssemblyInfo>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+  <PropertyGroup>
+    <LangVersion>14.0</LangVersion>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <CheckForOverflowUnderflow>False</CheckForOverflowUnderflow>
+  </PropertyGroup>
+  <PropertyGroup />
+  <ItemGroup />
+  <ItemGroup>
+    <Reference Include="SPTarkov.DI" />
+    <Reference Include="SPTarkov.Server.Core" />
+    <Reference Include="SemanticVersioning" />
+    <Reference Include="SPTarkov.Common" />
+    <Reference Include="NekoNet.Server.Core" />
+    <Reference Include="NekoParty.Server.Core" />
+    <Reference Include="FikaServer" />
+    <Reference Include="SPTarkov.Reflection" />
+    <Reference Include="0Harmony" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,54 @@
+﻿LootDiag —— 拾取诊断插件（只读，不改任何游戏状态）
+====================================================
+
+■ 为什么需要它
+  实测 bi8bo 在 XMBUBC 那局「无法拾取任何散落物品」，
+  但客户端日志里【没有任何】他自己的拾取失败记录 —— 因为：
+    · 本地就被拒的操作默认不写日志
+    · 只有网络路径的失败才打 Error
+  所以必须主动插桩才能定性。
+
+■ 它打点的 5 个环节
+  ① [LootDiag][动作]    InteractionContextHelper.GetAvailableActions(owner, LootItem)
+        ★ 核心。读 AvailableInteractionState 的 Actions 数量与 Error 文本。
+          可用动作=0 或 错误非空 ⇒ 本地根本不给拾取选项（铁证）。
+  ② [LootDiag][检查]    ItemController.CheckItemAction
+        本地物品操作检查点，只在被拒时记录原因。
+  ③ [LootDiag][拾取意图] Player.Interact
+        玩家真的发起了拾取。
+  ④ [LootDiag][结果]    FikaClient.OnOperationCallbackPacketReceived
+        客户端收到主机的执行结果（成功/失败+错误）。
+  ⑤ [LootDiag][主机收到] FikaServer.OnInventoryPacketReceived
+        主机收到请求（需 Verbose=true）。
+
+■ 启动时会自检
+  [LootDiag] ✓ GetAvailableActions(LootItem)
+  [LootDiag] ✓ CheckItemAction
+  [LootDiag] ✓ Player.Interact
+  [LootDiag] ✓ FikaClient.OnOperationCallbackPacketReceived
+  [LootDiag] ✓ FikaServer.OnInventoryPacketReceived
+  [LootDiag] 自检完成：5 个挂钩生效，0 个失败
+  ⇒ 如果有 ✗，说明那个挂钩没装上，不会产生数据（把这几行发给我）
+
+■ 怎么读结果（对照 5 个环节，看断在哪）
+  ① 没有 [动作] 记录          ⇒ 玩家没看向地面物品 / 或挂钩没中
+  ① [动作] 可用动作=0         ⇒ ★ 本地不给拾取选项 → 查 Error 文本
+  ① [动作] 有 Error           ⇒ ★ 直接告诉你原因
+  ③ 有 [拾取意图] 但没有 ④    ⇒ 请求发出去了但主机没回 → 网络/主机侧问题
+  ④ [结果] status=Failed      ⇒ 主机拒绝了，看 error 文本
+  ② [检查] 本地被拒           ⇒ 本地就挡住
+  ③ 完全没有                  ⇒ 玩家根本没触发拾取（可能不是物品问题）
+
+■ 配置
+  BepInEx\config\com.dsh.lootdiag.cfg
+    Enabled               = true    总开关
+    LogAvailableActions   = true    核心：记录地面物品的可用动作与拒绝原因
+    LogCheckItemAction    = true    记录本地检查（默认只记被拒的）
+    Verbose               = false   额外记录成功路径（排查时可开）
+
+■ 日志量
+  同一物品的状态不变时只记一次（60 秒清一次去重表），不会刷屏。
+
+■ 性能
+  挂钩只在对应方法被调用时执行 —— 而这些方法本来就是低频（
+  拾取/交互时才会走到），对帧率无影响。

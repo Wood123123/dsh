@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <AssemblyName>ShijiuHistoryFix</AssemblyName>
+    <RootNamespace>Dsh.ShijiuHistoryFix</RootNamespace>
+    <Version>1.0.0</Version>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <DebugType>none</DebugType>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <NoWarn>$(NoWarn);CS1701;CS1702;CS0436;NU1701</NoWarn>
+    <!-- 指向服务端安装目录 -->
+    <SPT_DIR Condition="'$(SPT_DIR)' == ''">\\Xtzj-20200101vo\c\Users\Wood\Documents\EFT-SERVER\SPT_Runtime</SPT_DIR>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="0Harmony">
+      <HintPath>$(SPT_DIR)\0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="SPTarkov.Server.Core">
+      <HintPath>$(SPT_DIR)\SPTarkov.Server.Core.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="SPTarkov.DI">
+      <HintPath>$(SPT_DIR)\SPTarkov.DI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="SemanticVersioning">
+      <HintPath>$(SPT_DIR)\SemanticVersioning.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- 拾玖的服务端 mod —— 我们要给它的 HistoryStore.Join 打补丁 -->
+    <Reference Include="ShiJiu-Tools.Server">
+      <HintPath>$(SPT_DIR)\user\mods\ShiJiu-Tools\ShiJiu-Tools.Server.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+</Project>
