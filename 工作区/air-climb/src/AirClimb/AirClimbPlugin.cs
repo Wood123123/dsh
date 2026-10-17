@@ -42,6 +42,7 @@ namespace Dsh.AirClimb
         internal static ConfigEntry<bool> AllowWhileFalling;
         internal static ConfigEntry<bool> BypassJumpAnimationGate;
         internal static ConfigEntry<int> LogCooldownMs;
+        internal static ConfigEntry<bool> DiagnosticLog;
 
         private Harmony _harmony;
 
@@ -68,7 +69,14 @@ namespace Dsh.AirClimb
             LogCooldownMs = Config.Bind("Air Climb", "Log Cooldown (ms)", 1000,
                 "判定日志的最小间隔毫秒数。0 = 每次都记（排障用，会刷屏）。");
 
+            DiagnosticLog = Config.Bind("Air Climb", "Diagnostic Log", true,
+                "★ 诊断模式：每次 GetVaultingStrategy 被调用时打印全部判定条件的实际值\n" +
+                "（CanVaulting / grounded / moveDirY / sprint / animTransition / jumpSetted /\n" +
+                "  障碍高度长度距离 / stairs / vaultCanMove / climbCanMove / 体力）。\n" +
+                "定位「放了 IsGrounded 还是爬不了」时打开；确认没问题后关掉以免刷屏。");
+
             _harmony = new Harmony(PluginGuid);
+            TryPatch("MovementState.Vaulting (空中入口)", () => _harmony.PatchAll(typeof(Patches.MovementStateVaultingPatch)));
             TryPatch("CanVaulting", () => _harmony.PatchAll(typeof(Patches.CanVaultingPatch)));
             TryPatch("GetVaultingStrategy", () => _harmony.PatchAll(typeof(Patches.GetVaultingStrategyPatch)));
 
