@@ -76,3 +76,5 @@ secrets.json
 # 打包素材
 缓存区/素材包/*.rar
 缓存区/素材包/*.zip
+# Fika 5.0 的移植版二进制包（不入库）
+Fika-3.*.zip
