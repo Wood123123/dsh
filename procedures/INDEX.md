@@ -31,6 +31,8 @@
 | 用 profiler 的 CSV 找"哪个 mod 慢"，得出一堆 mod 占大头 | `诊断-profiler的归属会误导` |
 | 静态扫 IL 找"每帧危险调用"，得出一堆 mod 风险高 | `诊断-静态扫描必须核守卫` |
 | 动态地图类 mod 进图卡 / 加载慢 / 内存涨 | `性能-SVG地图的三角化开销` |
+| 在服务器 `BepInEx\plugins\` 换了/删了文件，不知道客户端收不收得到 | `部署-NarcoNet分发` |
+| 客户端反复下载同一个文件 / 下完还是提示不一致 | `部署-NarcoNet分发` |
 | 想改 **Fika 本体**（加同步修复/看门狗），一编译几十个错 | `编译-Fika改源码` |
 | 改完 dll 覆盖不进去：`user-mapped section open` | `编译-Fika改源码` |
 | 移植 Fika 3.x（IL2CPP）代码到 4.x（Mono），方法签名对不上 | `编译-Fika改源码` §「EFT 4.1.6 差异」 |
