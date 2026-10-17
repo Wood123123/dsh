@@ -1,4 +1,4 @@
-﻿// © 2026 Lacyway All Rights Reserved
+// © 2026 Lacyway All Rights Reserved
 
 using System;
 using System.Collections.Generic;
@@ -135,6 +135,12 @@ public class FikaPlayer : LocalPlayer
     public ushort OperationStationaryCallbackId;
     private uint _proceedCallbackId;
     private readonly Dictionary<uint, Callback> _proceedCallbacks = [];
+    /// <summary>
+    /// ★ dsh-fix: 每条 proceed 回调的创建时刻（Time.time），与 _proceedCallbacks 同键。
+    /// 供 <see cref="ExpireStaleProceedCallbacks"/> 逐条判年龄 —— 没有它就只能一刀切清空，
+    /// 那会把正常往返途中的回调也误杀。
+    /// </summary>
+    private readonly Dictionary<uint, float> _proceedCallbackTimes = [];
     protected BaseInventoryController _baseInventoryController;
     #endregion
 
@@ -278,10 +284,83 @@ public class FikaPlayer : LocalPlayer
         var id = GetNextAvailableId();
         var handler = new ProceedCallbackHandler(confirmAction);
         _proceedCallbacks[id] = handler.Handle;
+        // ★ dsh-fix: 记录创建时刻，供 ExpireStaleProceedCallbacks 逐条过期。
+        //   主机如果永远不回复这个 proceed（掉线 / 主机卡顿 / 主机侧拒绝但没回包），
+        //   条目会永久留在 _proceedCallbacks 里 ⇒ WaitingForCallback 永真
+        //   ⇒ FikaClientFirearmController 的 CanPressTrigger / CanStartReload 永远 false
+        //   ⇒ 「手部卡住 / 开不了枪」直到本局结束。
+        _proceedCallbackTimes[id] = Time.time;
 #if DEBUG
         FikaGlobals.LogWarning($"Got callback {id} for proceed callback");
 #endif
         return id;
+    }
+
+    /// <summary>
+    /// ★ dsh-fix（移植自 Fika 3.0.1 的 ExpireStaleProceedCallbacks）：
+    /// 丢弃主机永远没有回复的 proceed 回调。
+    ///
+    /// 与「一刀切清空」的区别：这里按**每条回调自己的年龄**过期。
+    /// 一个刚创建 0.5 秒的回调可能还在正常往返途中，绝不能动；
+    /// 只有超过 <paramref name="timeoutSeconds"/> 仍未收到 HandleCallbackResponse 的才丢。
+    ///
+    /// 风险说明（诚实记录）：被丢弃的那次操作，主机的回复如果**之后**才到，
+    /// HandleCallbackResponse 会走 "Could not get callback" 分支记一条 Error 并返回，
+    /// 不会崩。那个被取消的手部切换不会发生，玩家会停在原武器上 —— 可接受降级。
+    /// 这比「永久不能开枪」好得多，也正是 Fika 3.x 采用同一取舍的原因。
+    ///
+    /// 只处理 _proceedCallbacks；OperationCallbacks 由 HandleCallbackFromServer 自己清理，
+    /// 且它的条目有独立生命周期，不在此处干预。
+    /// </summary>
+    /// <returns>本次丢弃的条目数。</returns>
+    internal int ExpireStaleProceedCallbacks(float timeoutSeconds)
+    {
+        if (_proceedCallbacks.Count == 0)
+        {
+            return 0;
+        }
+
+        var now = Time.time;
+        List<uint> expired = null;
+
+        foreach (var pair in _proceedCallbackTimes)
+        {
+            var age = now - pair.Value;
+            if (age < timeoutSeconds)
+            {
+                continue;
+            }
+
+            // 时间戳条目可能比回调条目活得久（HandleCallbackResponse 已移除回调）
+            if (!_proceedCallbacks.ContainsKey(pair.Key))
+            {
+                (expired ??= []).Add(pair.Key);
+                continue;
+            }
+
+            (expired ??= []).Add(pair.Key);
+        }
+
+        if (expired == null)
+        {
+            return 0;
+        }
+
+        foreach (var id in expired)
+        {
+            _proceedCallbackTimes.Remove(id);
+
+            if (!_proceedCallbacks.Remove(id))
+            {
+                continue;
+            }
+
+            FikaGlobals.LogWarning($"[ProceedExpiry] dropped proceed callback {id} after " +
+                                   $"{timeoutSeconds:F1}s without a host response " +
+                                   "— this is what leaves the hands locked / the weapon unable to fire");
+        }
+
+        return expired.Count;
     }
 
     internal void HandleCallbackResponse(uint callbackId, string error)
@@ -299,6 +378,8 @@ public class FikaPlayer : LocalPlayer
         }
 
         _proceedCallbacks.Remove(callbackId);
+        // ★ dsh-fix: 同步清掉时间戳，否则 _proceedCallbackTimes 会随每局操作数无界增长
+        _proceedCallbackTimes.Remove(callbackId);
 
 #if DEBUG
         FikaGlobals.LogInfo($"Callback was success: {success}");

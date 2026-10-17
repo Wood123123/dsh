@@ -1,0 +1,39 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v10.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v10.0": {
+      "FikaServer/2.4.1": {
+        "dependencies": {
+          "FikaShared": "1.0.0"
+        },
+        "runtime": {
+          "FikaServer.dll": {}
+        }
+      },
+      "FikaShared/1.0.0": {
+        "runtime": {
+          "FikaShared.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "FikaServer/2.4.1": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "FikaShared/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

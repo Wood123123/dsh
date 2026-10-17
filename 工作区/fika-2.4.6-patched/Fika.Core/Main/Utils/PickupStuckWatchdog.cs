@@ -1,5 +1,6 @@
 using System;
 using EFT;
+using Fika.Core.Main.Players;
 using UnityEngine;
 
 namespace Fika.Core.Main.Utils
@@ -31,6 +32,13 @@ namespace Fika.Core.Main.Utils
         /// <summary>两次修复之间的最小间隔，避免反复进入死循环。</summary>
         private const float RepairCooldown = 8f;
 
+        /// <summary>
+        /// ★ dsh-fix: proceed 回调的最长等待。
+        /// 一次正常的手部切换（主机校验 + 回包）远在这个时间之内；
+        /// 超过它还没回包，就认定主机的回复丢了。
+        /// </summary>
+        private const float ProceedCallbackTimeout = 5f;
+
         /// <summary>检查节流：每秒一次就够，拾取动画本来就在秒级。</summary>
         private const float CheckInterval = 1f;
 
@@ -38,6 +46,7 @@ namespace Fika.Core.Main.Utils
         private static float _stuckSince;
         private static float _nextRepairTime;
         private static int _repairCount;
+        private static int _proceedExpiredCount;
 
         /// <summary>诊断用：累计释放次数。</summary>
         internal static int RepairCount => _repairCount;
@@ -71,6 +80,27 @@ namespace Fika.Core.Main.Utils
             }
 
             _nextCheckTime = Time.time + CheckInterval;
+
+            // ── ⓪ 丢弃主机永远没回复的 proceed 回调 ──────────────────────
+            // 主机不回复时条目永久留在 _proceedCallbacks ⇒ WaitingForCallback 永真
+            // ⇒ FikaClientFirearmController 的 CanPressTrigger / CanStartReload 永远 false
+            // ⇒「开不了枪 / 手部卡住」直到本局结束。
+            // 逐条按年龄过期（不是一刀切），见 FikaPlayer.ExpireStaleProceedCallbacks 的说明。
+            if (player is FikaPlayer fikaPlayer)
+            {
+                try
+                {
+                    var dropped = fikaPlayer.ExpireStaleProceedCallbacks(ProceedCallbackTimeout);
+                    if (dropped > 0)
+                    {
+                        _proceedExpiredCount += dropped;
+                    }
+                }
+                catch (Exception exception)
+                {
+                    FikaGlobals.LogWarning($"[ProceedExpiry] failed: {exception.Message}");
+                }
+            }
 
             // ── ① 残留的物品栏锁 ───────────────────────────────────────────
             // ItemController.Locked 只被三个移动状态设置、在它们的 Exit 里清除：
@@ -131,6 +161,7 @@ namespace Fika.Core.Main.Utils
             _nextRepairTime = 0f;
             _repairCount = 0;
             _lockRepairCount = 0;
+            _proceedExpiredCount = 0;
             _lastLockReport = EPlayerState.None;
         }
 

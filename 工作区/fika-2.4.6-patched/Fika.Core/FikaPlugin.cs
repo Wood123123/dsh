@@ -1,4 +1,4 @@
-﻿using BepInEx;
+using BepInEx;
 using BepInEx.Logging;
 using Diz.Utils;
 using EFT;
@@ -142,6 +142,23 @@ public sealed class FikaPlugin : BaseUnityPlugin
         if (Settings.AllowItemSending)
         {
             _patchManager.EnablePatch(new ItemContext_Patch());
+        }
+
+        // ★ dsh-fix: 地面拾取绕过原生 PickUpState 状态机。
+        //   原生拾取的完成回调一旦丢失，玩家会永久留在 PickUpState（不能转视角 / 不能动 /
+        //   没有交互提示）⇒ 本局再也捡不起地面战利品。这个补丁让客户端直接执行库存操作，
+        //   从而根本不进入那个状态，而不是等卡住了再救。
+        //   主机仍权威：操作照走 ClientInventoryController，战利品无法本地复制。
+        //   目标方法按【形状】匹配（static + Player/IItemOperationResult/Item/IPlayer），
+        //   EFT 改混淆名也不受影响；找不到时只记一条警告，退回原生拾取路径，不崩。
+        try
+        {
+            _patchManager.EnablePatch(new Fika.Core.Main.Patches.World.InteractionContextHelper_PickupAction_Patch());
+        }
+        catch (Exception exception)
+        {
+            Logger.LogWarning("[PickupBypass] could not install the ground loot pickup bypass " +
+                              $"(falling back to the native pickup path): {exception.Message}");
         }
     }
 
