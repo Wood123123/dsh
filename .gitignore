@@ -64,3 +64,15 @@ machines.json
 _local/
 secrets.json
 .git-credentials
+
+# ── Fika 源码改造（2026-10-17）──────────────────────────────────
+# 参考源码（含官方 hollowed.dll 9.3 MB + 1414 个文件）不入库
+缓存区/参考源码/_fika246_src/
+缓存区/参考源码/_fika5_src/
+缓存区/参考源码/_fika5_be/
+# 编译依赖 dll 不入库（必须用 _fika246_src\References_upstream\hollowed.dll）
+工作区/fika-2.4.6-patched/References/
+工作区/fika-2.4.6-patched/References_upstream/
+# 打包素材
+缓存区/素材包/*.rar
+缓存区/素材包/*.zip

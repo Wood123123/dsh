@@ -1,0 +1,238 @@
+﻿using BepInEx.Logging;
+using Comfort.Common;
+using Diz.Utils;
+using EFT.Communications;
+using EFT.UI;
+using Fika.Core.Main.Utils;
+using Fika.Core.Networking.Websocket.Notifications;
+using Newtonsoft.Json.Linq;
+using SPT.Common.Http;
+using System;
+#if DEBUG
+using System.Linq;
+#endif
+using System.Threading.Tasks;
+using WebSocketSharp;
+
+namespace Fika.Core.Networking.Websocket;
+
+internal class FikaNotificationManager
+{
+    private static readonly ManualLogSource _logger = Logger.CreateLogSource("FikaNotificationManager");
+    public static FikaNotificationManager Instance;
+    public static bool Exists
+    {
+        get
+        {
+            return Instance != null;
+        }
+    }
+    public string Host { get; set; }
+    public string Url { get; set; }
+    public string SessionId { get; set; }
+    public bool Connected
+    {
+        get
+        {
+            return _webSocket.ReadyState == WebSocketState.Open;
+        }
+    }
+
+    public bool reconnecting;
+
+    private WebSocket _webSocket;
+
+    public FikaNotificationManager()
+    {
+        Instance = this;
+        Host = RequestHandler.Host.Replace("http", "ws");
+        SessionId = RequestHandler.SessionId;
+        Url = $"{Host}/fika/notification/";
+
+        _webSocket = new WebSocket(Url)
+        {
+            WaitTime = TimeSpan.FromMinutes(1),
+            EmitOnPing = true
+        };
+
+        _webSocket.SetCredentials(SessionId, "", true);
+
+        _webSocket.OnError += WebSocket_OnError;
+        _webSocket.OnMessage += WebSocket_OnMessage;
+        _webSocket.OnClose += (sender, e) =>
+        {
+            if (reconnecting)
+            {
+                return;
+            }
+
+            Task.Run(ReconnectWebSocket);
+        };
+
+        Connect();
+    }
+
+    private void WebSocket_OnError(object sender, ErrorEventArgs e)
+    {
+        _logger.LogInfo($"WS error: {e.Message}");
+    }
+
+    public void Connect()
+    {
+        _webSocket.Connect();
+    }
+
+    public void Close()
+    {
+        _webSocket.Close();
+    }
+
+    private void WebSocket_OnMessage(object sender, MessageEventArgs e)
+    {
+        if (e == null || e.IsPing)
+        {
+            return;
+        }
+
+        if (string.IsNullOrEmpty(e.Data))
+        {
+            return;
+        }
+
+        var jsonObject = JObject.Parse(e.Data);
+
+        if (!jsonObject.ContainsKey("type"))
+        {
+            return;
+        }
+
+        var type = (EFikaNotification)Enum.Parse(typeof(EFikaNotification), jsonObject.Value<string>("type"));
+
+#if DEBUG
+        _logger.LogDebug($"Received type: {type}");
+#endif
+        Notification notification = null;
+        switch (type)
+        {
+            case EFikaNotification.StartedRaid:
+                notification = e.Data.ParseJsonTo<StartRaidNotification>([]);
+
+                if (FikaGlobals.IsInRaid)
+                {
+                    return;
+                }
+                HandleNotification(notification);
+                break;
+            case EFikaNotification.SentItem:
+                notification = e.Data.ParseJsonTo<ReceivedSentItemNotification>([]);
+                HandleNotification(notification);
+                break;
+            case EFikaNotification.PushNotification:
+                notification = e.Data.ParseJsonTo<PushNotification>([]);
+                HandleNotification(notification);
+                break;
+            case EFikaNotification.KeepAlive:
+                break;
+            case EFikaNotification.OpenAdminSettings:
+                notification = e.Data.ParseJsonTo<OpenAdminMenuNotification>([]);
+                HandleAdminMenu(notification);
+                break;
+            case EFikaNotification.ShutdownClient:
+                notification = e.Data.ParseJsonTo<ShutdownClientNotification>([]);
+                HandleShutdown(notification);
+                break;
+            case EFikaNotification.HeadlessConnected:
+                notification = e.Data.ParseJsonTo<HeadlessConnectedNotification>([]);
+                HandleNotification(notification);
+                break;
+        }
+    }
+
+    private void HandleShutdown(Notification notification)
+    {
+        if (FikaBackendUtils.IsHeadless)
+        {
+            AsyncWorker.RunInMainTread(Application.Quit);
+        }
+    }
+
+    private void HandleAdminMenu(Notification notification)
+    {
+        if (notification is OpenAdminMenuNotification openAdminNotif && openAdminNotif.Success)
+        {
+            AsyncWorker.RunInMainTread(AdminSettingsUIScript.Create);
+        }
+    }
+
+    private void HandleNotification(Notification notification)
+    {
+        AsyncWorker.RunInMainTread(() => Singleton<PreloaderUI>.Instance.NotifierView.NotificationReceivedHandler(notification));
+    }
+
+    private async Task ReconnectWebSocket()
+    {
+        reconnecting = true;
+
+        while (reconnecting)
+        {
+            if (_webSocket.ReadyState == WebSocketState.Open)
+            {
+                break;
+            }
+
+            // Don't attempt to reconnect if we're still attempting to connect.
+            if (_webSocket.ReadyState != WebSocketState.Connecting)
+            {
+                _webSocket.Connect();
+            }
+
+            await Task.Delay(10 * 1000);
+
+            if (_webSocket.ReadyState == WebSocketState.Open)
+            {
+                break;
+            }
+        }
+
+        reconnecting = false;
+    }
+
+#if DEBUG
+    public static void TestNotification(EFikaNotification type)
+    {
+        // Ugly ass one-liner, who cares. It's for debug purposes
+        var Username = FikaPlugin.DevelopersList.ToList()[new System.Random().Next(FikaPlugin.DevelopersList.Count)].Key;
+
+        switch (type)
+        {
+            case EFikaNotification.StartedRaid:
+                StartRaidNotification startRaidNotification = new()
+                {
+                    Nickname = Username,
+                    Location = "Factory"
+                };
+
+                Singleton<PreloaderUI>.Instance.NotifierView.NotificationReceivedHandler(startRaidNotification);
+                break;
+            case EFikaNotification.SentItem:
+                ReceivedSentItemNotification SentItemNotification = new()
+                {
+                    Nickname = Username,
+                    ItemName = "LEDX Skin Transilluminator"
+                };
+
+                Singleton<PreloaderUI>.Instance.NotifierView.NotificationReceivedHandler(SentItemNotification);
+                break;
+            case EFikaNotification.PushNotification:
+                PushNotification PushNotification = new()
+                {
+                    Notification = "Test notification",
+                    NotificationIcon = ENotificationIconType.Note
+                };
+
+                Singleton<PreloaderUI>.Instance.NotifierView.NotificationReceivedHandler(PushNotification);
+                break;
+        }
+    }
+#endif
+}

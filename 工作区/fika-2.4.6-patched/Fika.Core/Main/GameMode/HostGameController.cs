@@ -1,0 +1,1117 @@
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using BitPacking;
+using Comfort.Common;
+using CommonAssets.Scripts.Game;
+using CommonAssets.Scripts.Game.LabyrinthEvent;
+using EFT;
+using EFT.AssetsManager;
+using EFT.Bots;
+using EFT.Communications;
+using EFT.Counters;
+using EFT.Game.Spawning;
+using EFT.GlobalEvents;
+using EFT.Interactive;
+using EFT.Interactive.SecretExfiltrations;
+using EFT.InventoryLogic;
+using EFT.UI;
+using EFT.UI.Screens;
+using EFT.Weather;
+using Fika.Core.Main.ClientClasses;
+using Fika.Core.Main.Components;
+using Fika.Core.Main.FreeCamera;
+using Fika.Core.Main.HostClasses;
+using Fika.Core.Main.ObservedClasses;
+using Fika.Core.Main.Players;
+using Fika.Core.Main.Utils;
+using Fika.Core.Networking;
+using Fika.Core.Networking.Http;
+using Fika.Core.Networking.Models;
+using Fika.Core.Networking.Packets.Backend;
+using Fika.Core.Networking.Packets.Communication;
+using Fika.Core.Networking.Packets.Generic;
+using Fika.Core.Networking.Packets.Generic.SubPackets;
+using Fika.Core.Networking.Packets.World;
+using Fika.Core.UI.Models;
+using JsonType;
+using static JsonType.LocationSettings;
+
+namespace Fika.Core.Main.GameMode;
+
+public class HostGameController : BaseGameController, IBotGame
+{
+    public HostGameController(IFikaGame game, EUpdateQueue updateQueue, GameWorld gameWorld, IEftSession session,
+        LocationSettings.Location location, WavesSettings wavesSettings, GameDateTime gameDateTime)
+        : base(game, updateQueue, gameWorld, session)
+    {
+        _botsController = new();
+        _botStateManager = BotStateManager.Create(_abstractGame, Singleton<FikaServer>.Instance, this);
+        _gameDateTime = gameDateTime;
+
+        if (game is not AbstractGame abstractGame)
+        {
+            throw new NullReferenceException("Missing AbstractGame");
+        }
+
+        // Non Waves Scenario setup
+        _nonWavesSpawnScenario = NonWavesSpawnScenario.Create(abstractGame, location, _botsController);
+        _nonWavesSpawnScenario.ImplementWaveSettings(wavesSettings);
+
+        // Waves Scenario setup
+        var waves = LocalGame.ModifySettings(wavesSettings, location.waves);
+        _wavesSpawnScenario = WavesSpawnScenario.Create(abstractGame.gameObject, waves, _botsController.ActivateBotsByWave, location);
+
+        // Boss Scenario setup
+        var bossSpawns = LocalGame.smethod_8(true, wavesSettings, location.BossLocationSpawn);
+        _bossSpawnScenario = BossSpawnScenario.Create(bossSpawns, _botsController.ActivateBotsByWave);
+
+        _server = Singleton<FikaServer>.Instance;
+    }
+
+    public byte[] LootData { get; set; }
+
+    protected readonly BotStateManager _botStateManager;
+    protected readonly NonWavesSpawnScenario _nonWavesSpawnScenario;
+    protected readonly BotsController _botsController;
+    protected readonly WavesSpawnScenario _wavesSpawnScenario;
+    protected readonly BossSpawnScenario _bossSpawnScenario;
+    protected readonly Dictionary<int, int> _botQueue = [];
+    protected readonly FikaServer _server;
+    protected GameDateTime _gameDateTime;
+
+    /// <summary>
+    /// How long in seconds until a bot is force spawned if not every client could load it
+    /// </summary>
+    private readonly float _botTimeout = 120f;
+    /// <summary>
+    /// The <see cref="Task.Delay(int)"/> in every loop during the <see cref="_botTimeout"/>
+    /// </summary>
+    private readonly float _botTimeoutDelay = 0.25f;
+
+    private readonly NetDataWriter _writer = new();
+
+    public GameStatus Status
+    {
+        get
+        {
+            return _abstractGame.Status;
+        }
+    }
+
+    public GameDateTime GameDateTime
+    {
+        get
+        {
+            return _gameDateTime;
+        }
+        set
+        {
+            _gameDateTime = value;
+        }
+    }
+
+    public BotsController BotsController
+    {
+        get
+        {
+            return _botsController;
+        }
+    }
+
+    public IWeatherCurve WeatherCurve
+    {
+        get
+        {
+            return WeatherController.Instance.WeatherCurve;
+        }
+    }
+
+    public BossSpawnScenario BossSpawnScenario
+    {
+        get
+        {
+            return _bossSpawnScenario;
+        }
+    }
+
+    public event Action UpdateByUnity;
+
+    public Action Update
+    {
+        get
+        {
+            return UpdateByUnity;
+        }
+    }
+
+    public override Task ReceiveSpawnPoint(Profile profile)
+    {
+        throw new NotImplementedException("Should not be called as a host");
+    }
+
+    public void BotDespawn(BotOwner bot)
+    {
+        var getPlayer = bot.GetPlayer;
+        _botsController.BotDied(bot);
+        _botsController.DestroyInfo(getPlayer);
+        AssetPoolObject.ReturnToPool(bot.gameObject, true);
+    }
+
+    public override IEnumerator WaitForHostInit(int timeBeforeDeployLocal)
+    {
+        if (_fikaGame is not AbstractGame abstractGame)
+        {
+            throw new NullReferenceException("AbstractGame was missing");
+        }
+
+        _server.HostReady = true;
+
+        var startTime = DateTimeExtensions.UtcNow.AddSeconds((double)timeBeforeDeployLocal);
+        GameTime = startTime;
+        _server.GameStartTime = startTime;
+        SessionTime = abstractGame.GameTimer.SessionTime;
+
+        InformationPacket packet = new()
+        {
+            RaidStarted = RaidStarted,
+            ReadyPlayers = _server.ReadyClients,
+            HostReady = _server.HostReady,
+            GameTime = GameTime.Value,
+            SessionTime = SessionTime.Value,
+            GameDateTime = GameDateTime
+        };
+
+        _server.SendData(ref packet, DeliveryMethod.ReliableOrdered);
+        LootData = null;
+
+        yield break;
+    }
+
+    #region Bots
+    /// <summary>
+    /// Used to spawn a bot for the host
+    /// </summary>
+    /// <param name="profile"><see cref="Profile"/> to spawn</param>
+    /// <param name="position">The <see cref="Vector3"/> position to spawn on</param>
+    /// <returns></returns>
+    private async Task<LocalPlayer> CreateBot(GameWorld gameWorld, Profile profile, Vector3 position)
+    {
+#if DEBUG
+        Logger.LogWarning($"Creating bot {profile.Info.Settings.Role} at {position}");
+#endif
+
+        if (_coopHandler == null)
+        {
+            Logger.LogError($"{nameof(CreateBot)}: CoopHandler was null");
+            return null;
+        }
+
+        var netId = 1000;
+        FikaBot fikaBot;
+        if (Bots.ContainsKey(profile.Id))
+        {
+            return null;
+        }
+
+        netId = _server.PopNetId();
+
+        profile.SetSpawnedInSession(profile.Info.Side == EPlayerSide.Savage || FikaPlugin.Instance.Settings.PMCFoundInRaid);
+        if (profile.Info.Side != EPlayerSide.Savage)
+        {
+            var backpack = profile.Inventory.Equipment.GetSlot(EquipmentSlot.Backpack).ContainedItem;
+            if (backpack != null)
+            {
+                foreach (var item in backpack.GetAllItems())
+                {
+                    if (item != backpack)
+                    {
+                        item.SpawnedInSession = true;
+                    }
+                }
+            }
+
+            var armband = profile.Inventory.Equipment.GetSlot(EquipmentSlot.ArmBand).ContainedItem;
+            if (armband != null)
+            {
+                armband.SpawnedInSession = false;
+            }
+
+            var melee = profile.Inventory.Equipment.GetSlot(EquipmentSlot.Scabbard).ContainedItem;
+            if (melee != null)
+            {
+                melee.SpawnedInSession = false;
+            }
+        }
+
+        var mongoId = MongoID.Generate(true);
+        const ushort nextOperationId = 0;
+        var packet = new SendCharacterPacket(new()
+        {
+            Profile = profile,
+            ControllerId = mongoId,
+            FirstOperationId = nextOperationId,
+            IsZombie = profile.Info.Settings.UseSimpleAnimator,
+            HealthByteArray = profile.Health.SerializeHealthInfo()
+        }, true, true, position, netId);
+        _server.SendGenericPacket(in packet, DeliveryMethod.ReliableOrdered, true);
+
+        if (_server.NetServer.ConnectedPeersCount > 0)
+        {
+            await WaitForPlayersToLoadBotProfile(netId);
+        }
+
+        fikaBot = await FikaBot.CreateBot(_gameWorld, netId, position, Quaternion.identity, "Player",
+           "Bot_", EPointOfView.ThirdPerson, profile, true, _updateQueue, Player.EUpdateMode.Auto,
+           Player.EUpdateMode.Auto, AppEnvironment.Config.CharacterController.BotPlayerMode,
+           FikaGlobals.GetOtherPlayerSensitivity, FikaGlobals.GetOtherPlayerSensitivity,
+           ObservedViewFilter.Default, mongoId, nextOperationId);
+
+        fikaBot.Location = Location.Id;
+        Bots.Add(fikaBot.ProfileId, fikaBot);
+
+        if (FikaPlugin.Instance.Settings.DisableBotMetabolism.Value)
+        {
+            fikaBot.HealthController.DisableMetabolism();
+        }
+        _coopHandler.Players.Add(fikaBot.NetId, fikaBot);
+
+        if (profile.Info.Settings.Role != WildSpawnType.shooterBTR)
+        {
+            _botStateManager.AddBot(fikaBot);
+        }
+
+        var spawnPacket = new SpawnAIPacket(netId, position);
+        _server.SendGenericPacket(in spawnPacket, DeliveryMethod.ReliableOrdered, true);
+
+        return fikaBot;
+    }
+
+    /// <summary>
+    /// Increments the amount of players that have loaded a bot, used for <see cref="WaitForPlayersToLoadBotProfile(int)"/>
+    /// </summary>
+    /// <param name="netId">The id to increment</param>
+    public void IncreaseLoadedPlayers(int netId)
+    {
+        if (_botQueue.ContainsKey(netId))
+        {
+            _botQueue[netId]++;
+        }
+        else
+        {
+            Logger.LogError($"IncreaseLoadedPlayers::Could not find netId {netId}!");
+        }
+    }
+
+    /// <summary>
+    /// <see cref="Task"/> used to ensure that all players loads a bot before it spawns
+    /// </summary>
+    /// <param name="netId">The NetId to spawn</param>
+    /// <returns></returns>
+    private async Task WaitForPlayersToLoadBotProfile(int netId)
+    {
+        _botQueue.Add(netId, 0);
+        var connectedPeers = _server.NetServer.ConnectedPeersCount;
+
+        var elapsedSeconds = 0f;
+
+        while (_botQueue[netId] < connectedPeers)
+        {
+            if (elapsedSeconds >= _botTimeout)
+            {
+                Logger.LogWarning($"WaitForPlayersToLoadBotProfile::Took too long for every player to load the bot with id {netId}, force spawning!");
+                _botQueue.Remove(netId);
+                return;
+            }
+
+            await Task.Delay((int)(_botTimeoutDelay * 1000)); // multiply 0.X * 1000 to get milliseconds
+            elapsedSeconds += _botTimeoutDelay;
+            connectedPeers = _server.NetServer.ConnectedPeersCount;
+        }
+
+        if (elapsedSeconds > 30f)
+        {
+            Logger.LogWarning($"WaitForPlayersToLoadBotProfile::Bot [{netId}] took an abnormal amount of time to load: {elapsedSeconds:F1}s");
+        }
+
+        _botQueue.Remove(netId);
+    }
+
+    /// <summary>
+    /// Despawns a bot
+    /// </summary>
+    /// <param name="coopHandler"></param>
+    /// <param name="bot">The bot to despawn</param>
+    internal void DespawnBot(CoopHandler coopHandler, Player bot)
+    {
+        var botOwner = bot.AIData.BotOwner;
+
+        _botsController.Bots.Remove(botOwner);
+        bot.HealthController.DiedEvent -= botOwner.OnDied; // Unsubscribe from the event to prevent errors.
+        BotDespawn(botOwner);
+        if (botOwner != null)
+        {
+            botOwner.Dispose();
+        }
+
+        var fikaPlayer = (FikaPlayer)bot;
+        coopHandler.Players.Remove(fikaPlayer.NetId);
+        Bots.Remove(bot.ProfileId);
+    }
+    #endregion
+
+    /// <summary>
+    /// Sets up a custom weather curve
+    /// </summary>
+    /// <param name="timeAndWeather">Struct with custom settings</param>
+    public void SetupCustomWeather(TimeAndWeatherSettings timeAndWeather)
+    {
+        if (WeatherController.Instance == null)
+        {
+            return;
+        }
+
+        var dateTime = DateTimeExtensions.StartOfDay();
+        var dateTime2 = dateTime.AddDays(1);
+
+        var weather = WeatherNode.CreateDefault();
+        var weather2 = WeatherNode.CreateDefault();
+        weather.Cloudness = weather2.Cloudness = timeAndWeather.CloudinessType.ToValue();
+        weather.Rain = weather2.Rain = timeAndWeather.RainType.ToValue();
+        weather.Wind = weather2.Wind = timeAndWeather.WindType.ToValue();
+        weather.ScaterringFogDensity = weather2.ScaterringFogDensity = timeAndWeather.FogType.ToValue();
+        weather.Time = dateTime.Ticks;
+        weather2.Time = dateTime2.Ticks;
+        WeatherNode[] weatherClasses = [weather, weather2];
+        WeatherClasses = weatherClasses;
+        WeatherController.Instance.SetWeatherNodes(weatherClasses);
+    }
+
+    public override async Task StartBotSystemsAndCountdown(BotControllerSettings controllerSettings, GameWorld gameWorld)
+    {
+        LoadingScreenUI.Instance.UpdateAndBroadcast(80f);
+
+        if (Location.Id == "laboratory")
+        {
+            Logger.LogInfo("Location is 'Laboratory', skipping weather generation");
+            Season = ESeason.Summer;
+            FikaBackendUtils.CustomRaidSettings.UseCustomWeather = false;
+        }
+        else
+        {
+            await GenerateWeathers();
+        }
+
+        _abstractGame.SetMatchmakerStatus(LocaleUtils.UI_FINISHING_RAID_INIT.Localized());
+
+        gameWorld.RegisterRestrictableZones();
+        gameWorld.RegisterBorderZones();
+
+        await InitializeBotsSystem(Location, controllerSettings, gameWorld);
+
+#if DEBUG
+        Logger.LogWarning("Starting " + nameof(BaseGameController.WaitForOtherPlayersToLoad));
+#endif
+        await WaitForOtherPlayersToLoad();
+
+        _abstractGame.SetMatchmakerStatus(LocaleUtils.UI_FINISHING_RAID_INIT.Localized());
+        Logger.LogInfo("All players are loaded, continuing...");
+
+        await StartBotsSystem(Location);
+
+        // Add FreeCamController to GameWorld GameObject
+        if (!FikaBackendUtils.IsHeadless)
+        {
+            var freeCamController = gameWorld.gameObject.AddComponent<FreeCameraController>();
+            Singleton<FreeCameraController>.Create(freeCamController);
+        }
+
+        await SetupRaidCode();
+
+        LoadingScreenUI.Instance.UpdateAndBroadcast(85f);
+
+        Singleton<GlobalConfiguration>.Instance.TimeBeforeDeployLocal = Math.Max(Singleton<GlobalConfiguration>.Instance.TimeBeforeDeployLocal, 3);
+    }
+
+    public override async Task WaitForHostToStart()
+    {
+        await base.WaitForHostToStart();
+
+        GameObject startButton = null;
+        if (!FikaBackendUtils.IsHeadless)
+        {
+            startButton = CreateStartButton() ?? throw new NullReferenceException("Start button could not be created!");
+        }
+
+        if (FikaPlugin.Instance.Settings.DevMode.Value)
+        {
+            Logger.LogWarning("DevMode is enabled, skipping wait...");
+            NotificationManager.DisplayMessageNotification("DevMode enabled, starting automatically...", iconType: EFT.Communications.ENotificationIconType.Note);
+            RaidStarted = true;
+        }
+
+        while (!RaidStarted)
+        {
+            await Task.Yield();
+        }
+
+        Logger.LogInfo("Raid has been started...");
+
+        if (FikaPlugin.Instance.Settings.UseNATPunching.Value)
+        {
+            _server.StopNatIntroduceRoutine();
+        }
+
+        if (startButton != null)
+        {
+            GameObject.Destroy(startButton);
+        }
+
+        InformationPacket continuePacket = new()
+        {
+            AmountOfPeers = _server.NetServer.ConnectedPeersCount + 1
+        };
+        _server.SendData(ref continuePacket, DeliveryMethod.ReliableOrdered);
+        SetStatusModel status = new(FikaBackendUtils.GroupId, LobbyEntry.ELobbyStatus.IN_GAME);
+        await FikaRequestHandler.UpdateSetStatus(status);
+    }
+
+    public override async Task WaitForOtherPlayersToLoad()
+    {
+        float expectedPlayers = _server.PlayerAmount;
+        if (expectedPlayers <= 1)
+        {
+            _server.ReadyClients++;
+            return;
+        }
+
+        if (FikaBackendUtils.IsHeadless)
+        {
+            expectedPlayers--;
+        }
+#if DEBUG
+        Logger.LogWarning("Server: Waiting for coopHandler.AmountOfHumans < expected players, expected: " + expectedPlayers);
+#endif
+        _server.ReadyClients++;
+        do
+        {
+            await Task.Delay(100);
+            _abstractGame.SetMatchmakerStatus(LocaleUtils.UI_WAIT_FOR_OTHER_PLAYERS.Localized(), (float)_coopHandler.AmountOfHumans / expectedPlayers);
+        } while (_coopHandler.AmountOfHumans < expectedPlayers);
+
+        InformationPacket packet = new()
+        {
+            RaidStarted = RaidStarted,
+            ReadyPlayers = _server.ReadyClients
+        };
+
+        _server.SendData(ref packet, DeliveryMethod.ReliableOrdered);
+
+#if DEBUG
+        Logger.LogWarning("Server: Waiting for server.ReadyClients < expected players, expected: " + expectedPlayers);
+#endif
+        if (FikaBackendUtils.IsHeadless)
+        {
+            expectedPlayers++;
+        }
+
+        do
+        {
+            await Task.Delay(100);
+            _abstractGame.SetMatchmakerStatus(LocaleUtils.UI_WAIT_FOR_OTHER_PLAYERS.Localized(), (float)_server.ReadyClients / expectedPlayers);
+        } while (_server.ReadyClients < expectedPlayers);
+
+        InformationPacket finalPacket = new()
+        {
+            RaidStarted = RaidStarted,
+            ReadyPlayers = _server.ReadyClients
+        };
+
+        _server.SendData(ref finalPacket, DeliveryMethod.ReliableOrdered);
+    }
+
+    public override async Task GenerateWeathers()
+    {
+        if (WeatherController.Instance != null)
+        {
+            _abstractGame.SetMatchmakerStatus(LocaleUtils.UI_INIT_WEATHER.Localized());
+            Logger.LogInfo("Generating and initializing weather...");
+            var weather = await _backendSession.WeatherRequest();
+            Season = _backendSession.Season;
+            SeasonsSettings = _backendSession.SeasonsSettings;
+            if (!FikaBackendUtils.CustomRaidSettings.UseCustomWeather)
+            {
+                WeatherClasses = weather.Weathers;
+                WeatherController.Instance.SetWeatherNodes(WeatherClasses);
+            }
+        }
+    }
+
+    public override IEnumerator CountdownScreen(Profile profile, string profileId)
+    {
+        yield return base.CountdownScreen(profile, profileId);
+        _localPlayer.PacketSender.Init();
+
+        _gameWorld.StartCoroutine(SyncTraps());
+        _gameWorld.StartCoroutine(CreateStashes());
+    }
+
+    public override void CreateSpawnSystem(Profile profile)
+    {
+        _spawnPoints = SpawnPointsCollection.CreateFromScene(new DateTime?(DateTimeExtensions.LocalDateTimeFromUnixTime(Location.UnixDateTime)),
+                                Location.SpawnPointParams);
+        var spawnSafeDistance = (Location.SpawnSafeDistanceMeters > 0) ? Location.SpawnSafeDistanceMeters : 100;
+        SpawnSystemSettings settings = new(Location.MinDistToFreePoint, Location.MaxDistToFreePoint, Location.MaxBotPerZone, spawnSafeDistance, Location.NoGroupSpawn, Location.OneTimeSpawn);
+        SpawnSystem = SpawnSystemFactory.CreateSpawnSystem(settings, FikaGlobals.GetApplicationTime, Singleton<GameWorld>.Instance, _botsController, _spawnPoints);
+        _spawnPoint = SpawnSystem.SelectSpawnPoint(ESpawnCategory.Player, profile.Info.Side, null, null, null, null, profile.Id);
+        InfiltrationPoint = string.IsNullOrEmpty(_spawnPoint.Infiltration) ? "MissingInfiltration" : _spawnPoint.Infiltration;
+    }
+
+    public async Task InitializeBotsSystem(LocationSettings.Location location,
+        BotControllerSettings controllerSettings, GameWorld gameWorld)
+    {
+        BotProfileClient botsPresets = new(_backendSession, _wavesSpawnScenario.SpawnWaves,
+                _bossSpawnScenario.BossSpawnWaves, _nonWavesSpawnScenario.NonWaves, false);
+        List<CountTypeBotWave> waveInfos = [];
+        var halloween = location.Events.Halloween2024;
+        if (halloween?.InfectionPercentage > 0)
+        {
+            waveInfos.AddRange(BotHalloweenWithZombies.GetProfilesOnStart());
+        }
+        await botsPresets.TryLoadBotsProfilesOnStart(waveInfos);
+        BotCreatorClient botCreator = new(this, botsPresets, CreateBot);
+        BotZone[] botZones = [.. LocationScene.GetAllObjects<BotZone>(false)];
+
+        var useWaveControl = controllerSettings.BotAmount == EBotAmount.Horde;
+
+        var limits = SetMaxBotsLimit(location);
+        if (FikaPlugin.Instance.Settings.NoAI.Value)
+        {
+            FikaGlobals.LogWarning("No AI enabled - stopping bot spawns");
+            controllerSettings.BotAmount = EBotAmount.NoBots;
+            limits = 0;
+        }
+
+        var numberOfBots = controllerSettings.BotAmount switch
+        {
+            EBotAmount.AsOnline => _backendSession.BackEndConfig.Config.MaxBotsAliveOnMap,
+            EBotAmount.NoBots => 0,
+            EBotAmount.Low => 15,
+            EBotAmount.Medium => 20,
+            EBotAmount.High => 25,
+            EBotAmount.Horde => 35,
+            _ => 15,
+        };
+
+        _botsController.SetSettings(limits > 0 ? limits : numberOfBots, _backendSession.BackEndConfig.BotPresets, _backendSession.BackEndConfig.BotWeaponScatterings);
+        _botsController.Init(this, botCreator, botZones, SpawnSystem, _wavesSpawnScenario.BotLocationModifier,
+            controllerSettings.IsEnabled, controllerSettings.IsScavWars, useWaveControl, false,
+            _bossSpawnScenario.HaveSectants, gameWorld, location.OpenZones, location.Events);
+        UpdateByUnity -= _botsController.UpdateByUnity;
+        if (controllerSettings.ExcludedBosses != null)
+        {
+            _botsController.BotSpawner.SetBlockedRoles(controllerSettings.ExcludedBosses);
+        }
+        _botStateManager.AssignBotsController(_botsController);
+
+        if (!FikaBackendUtils.IsHeadless && Singleton<IFikaGame>.Instance is CoopGame coopGame)
+        {
+            _botsController.AddActivePLayer(coopGame.LocalPlayer);
+        }
+    }
+
+    /// <summary>
+    /// Made for modders to set custom limits in their mods
+    /// </summary>
+    /// <param name="location">The map to get the max bots for</param>
+    /// <returns>Max bots if any</returns>
+    protected int SetMaxBotsLimit(LocationSettings.Location location)
+    {
+        return 0;
+    }
+
+    public async Task StartBotsSystem(LocationSettings.Location location)
+    {
+#if DEBUG
+        Logger.LogWarning("Server: Starting scenarios of bots");
+#endif
+        if (location.OldSpawn && _wavesSpawnScenario.SpawnWaves != null && _wavesSpawnScenario.SpawnWaves.Length != 0)
+        {
+            Logger.LogInfo("Running old spawn system. Waves: " + _wavesSpawnScenario.SpawnWaves.Length);
+            if (_wavesSpawnScenario != null)
+            {
+                await _wavesSpawnScenario.Run(EBotsSpawnMode.BeforeGameStarted);
+                await _wavesSpawnScenario.Run(EBotsSpawnMode.AfterGameStarted);
+            }
+        }
+
+        if (location.NewSpawn)
+        {
+            Logger.LogInfo("Running new spawn system.");
+            if (_nonWavesSpawnScenario != null)
+            {
+                _nonWavesSpawnScenario.Run();
+            }
+        }
+
+        _bossSpawnScenario.Run(_botsController.BotSpawner.GetPmcZones());
+        _botsController.EventsController.SpawnAction();
+    }
+
+    public override void SetupEventsAndExfils(Player player)
+    {
+        if (_fikaGame is not CoopGame coopGame)
+        {
+            throw new NullReferenceException("Could not find CoopGame");
+        }
+
+        coopGame.GameTimer.Start(GameTime, SessionTime);
+        coopGame.Spawn();
+
+        var skills = coopGame.Profile.Skills.Skills;
+        var skillsLength = skills.Length;
+        for (var i = 0; i < skillsLength; i++)
+        {
+            skills[i].SetPointsEarnedInSession(0f, false);
+        }
+
+        coopGame.Profile.Info.EntryPoint = InfiltrationPoint;
+        Logger.LogInfo("[SERVER] SpawnPoint: " + _spawnPoint.Id + ", InfiltrationPoint: " + InfiltrationPoint);
+
+        var exfilController = ExfiltrationController.Instance;
+        var isScav = player.Side is EPlayerSide.Savage;
+        ExfiltrationPoint[] exfilPoints;
+        SecretExfiltrationPoint[] secretExfilPoints;
+        exfilController.InitSecretExfils(player);
+
+        if (isScav)
+        {
+            exfilController.ScavExfiltrationClaim(player.Position, player.ProfileId, player.Profile.FenceInfo.AvailableExitsCount);
+            var mask = exfilController.GetScavExfiltrationMask(player.ProfileId);
+            exfilPoints = exfilController.ScavExfiltrationClaim(mask, player.ProfileId);
+            secretExfilPoints = exfilController.GetScavSecretExits();
+        }
+        else
+        {
+            exfilPoints = exfilController.EligiblePoints(coopGame.Profile);
+            secretExfilPoints = exfilController.SecretEligiblePoints();
+        }
+
+        coopGame.GameUi.TimerPanel.SetTime(DateTimeExtensions.UtcNow,
+            coopGame.Profile.Info.Side, coopGame.GameTimer.EscapeTimeSeconds(),
+            exfilPoints, secretExfilPoints);
+
+        if (TransitController.Exist(out FikaHostTransitController transitController))
+        {
+            transitController.Init();
+            foreach (var activePlayer in CoopHandler.HumanPlayers)
+            {
+                var initEvent = new TransitInitEvent
+                {
+                    PlayerId = activePlayer.Id,
+                    Points = Location.transitParameters.Where(x => x.active).ToDictionary(k => k.id),
+                    TransitionCount = (ushort)transitController._localRaidSettings.transition.transitionCount,
+                    EventPlayer = transitController.IsEvent
+                };
+
+                var writer = NetworkUtils.EventDataWriter;
+                writer.Reset();
+                initEvent.Serialize(ref writer);
+                writer.Flush();
+
+                var syncPacket = new SyncEventPacket
+                {
+                    Type = 0,
+                    Data = new byte[writer.BytesWritten]
+                };
+                Array.Copy(writer.Buffer, syncPacket.Data, writer.BytesWritten);
+                _server.SendData(ref syncPacket, DeliveryMethod.ReliableOrdered);
+
+                var updateEvent = new TransitUpdateEvent
+                {
+                    PlayerId = activePlayer.Id,
+                    EventOnly = transitController.IsEvent,
+                    Points = Location.transitParameters.Where(x => x.active).ToDictionary(k => k.id)
+                };
+
+                writer.Reset();
+                updateEvent.Serialize(ref writer);
+                writer.Flush();
+
+                syncPacket.Type = 1;
+                Array.Copy(writer.Buffer, syncPacket.Data, writer.BytesWritten);
+                _server.SendData(ref syncPacket, DeliveryMethod.ReliableOrdered);
+            }
+        }
+
+        if (Location.EventTrapsData != null)
+        {
+            Logger.LogInfo("Loading trap data");
+            LabyrinthSyncableTraps.InitLabyrinthSyncableTraps(Location.EventTrapsData);
+            _gameWorld.SyncModule = new();
+        }
+
+        ExfilManager.Run(exfilPoints, secretExfilPoints);
+        coopGame.Status = GameStatus.Started;
+        _botsController.Bots.CheckActivation();
+
+        ConsoleScreen.ApplyStartCommands();
+    }
+
+    /// <summary>
+    /// When the local player successfully extracts, enable freecam, notify other players about the extract
+    /// </summary>
+    /// <param name="player">The local player to start the Coroutine on</param>
+    /// <param name="exfiltrationPoint">The exfiltration point that was used to extract</param>
+    /// <param name="transitPoint">The transit point that was used to transit</param>
+    /// <returns></returns>
+    public override void Extract(FikaPlayer player, ExfiltrationPoint exfiltrationPoint, TransitPoint transitPoint = null)
+    {
+        if (_fikaGame is not CoopGame coopGame)
+        {
+            throw new NullReferenceException("Could not find CoopGame");
+        }
+
+        var preloaderUI = Singleton<PreloaderUI>.Instance;
+        _localTriggerZones = [.. player.TriggerZones];
+
+        player.ClientMovementContext.SetGravity(false);
+        var position = player.Position;
+        position.y += 500f;
+        player.Teleport(position);
+
+        if (coopGame.ExitStatus == ExitStatus.MissingInAction)
+        {
+            NotificationManager.DisplayMessageNotification(LocaleUtils.PLAYER_MIA.Localized(), iconType: ENotificationIconType.Alert, textColor: Color.red);
+        }
+
+        if (player.QuestController is ClientQuestController clientQuestController)
+        {
+            clientQuestController.ToggleSend(false);
+        }
+
+        if (player.QuestController is ClientSharedQuestController sharedQuestController)
+        {
+            sharedQuestController.ToggleQuestSharing(false);
+        }
+
+#if !DEBUG
+        var matchEndConfig = Singleton<GlobalConfiguration>.Instance.Experience.MatchEnd;
+        if (player.Profile.EftStats.SessionCounters.GetAllInt([CounterTag.Exp]) < matchEndConfig.SurvivedExpRequirement && coopGame.PastTime < matchEndConfig.SurvivedTimeRequirement)
+        {
+            coopGame.ExitStatus = ExitStatus.Runner;
+        }
+#endif
+
+        if (exfiltrationPoint != null)
+        {
+            exfiltrationPoint.Disable();
+
+            if (exfiltrationPoint.HasRequirements && exfiltrationPoint.TransferItemRequirement?.Met(player, exfiltrationPoint) == true && player.IsYourPlayer)
+            {
+                // Seems to already be handled by SPT so we only add it visibly
+                player.Profile.EftStats.SessionCounters.AddDouble(0.2, [CounterTag.FenceStanding, EFenceStandingSource.ExitStanding]);
+            }
+        }
+
+        if (player.Side == EPlayerSide.Savage)
+        {
+            // Seems to already be handled by SPT so we only add it visibly
+            player.Profile.EftStats.SessionCounters.AddDouble(0.01d, [CounterTag.FenceStanding, EFenceStandingSource.ExitStanding]);
+        }
+
+        var transitController = Singleton<GameWorld>.Instance.TransitController;
+        if (transitController != null && transitPoint != null)
+        {
+            if (transitController.alreadyTransits.TryGetValue(player.ProfileId, out var data))
+            {
+                coopGame.ExitStatus = ExitStatus.Transit;
+                coopGame.ExitLocation = transitPoint.parameters.name;
+                FikaBackendUtils.IsTransit = true;
+            }
+            if (transitController is FikaHostTransitController hostController)
+            {
+                var packet = new UpdateBackendDataPacket(hostController.AliveTransitPlayers);
+                _server.SendGenericPacket(in packet, DeliveryMethod.ReliableOrdered, true);
+            }
+        }
+
+        if (_coopHandler != null)
+        {
+            try // This is to allow clients to extract if they lose connection
+            {
+                var packet = new ClientExtractPacket(player.NetId);
+                _server.SendGenericPacket(in packet, DeliveryMethod.ReliableOrdered, true);
+                ClearHostAI(player);
+            }
+            catch
+            {
+
+            }
+
+            var fikaPlayer = player;
+            coopGame.ExtractedPlayers.Add(fikaPlayer.NetId);
+            _coopHandler.ExtractedPlayers.Add(fikaPlayer.NetId);
+            _coopHandler.Players.Remove(fikaPlayer.NetId);
+
+            preloaderUI.StartBlackScreenShow(2f, 2f, () => preloaderUI.FadeBlackScreen(2f, -2f));
+
+            player.ActiveHealthController.SetDamageCoeff(0f);
+            player.ActiveHealthController.DamageMultiplier = 0f;
+            player.ActiveHealthController.DisableMetabolism();
+            player.ActiveHealthController.PauseAllEffects();
+
+            _extractRoutine = coopGame.StartCoroutine(ExtractRoutine(player, coopGame));
+
+            // Prevents players from looting after extracting
+            EftScreenManager.Instance.CloseAllScreensForced();
+
+            // Detroys session timer
+            if (TimeManager != null)
+            {
+                UnityEngine.Object.Destroy(TimeManager);
+            }
+            if (coopGame.GameUi.TimerPanel.enabled)
+            {
+                coopGame.GameUi.TimerPanel.Close();
+            }
+        }
+        else
+        {
+            throw new NullReferenceException("Extract: CoopHandler was null!");
+        }
+    }
+
+    public void ClearHostAI(Player player)
+    {
+        if (_botsController != null)
+        {
+            _botsController.DestroyInfo(player);
+        }
+    }
+
+    public override void CleanUp()
+    {
+        base.CleanUp();
+
+        if (!FikaBackendUtils.IsHeadless)
+        {
+            var fikaPlayer = (FikaPlayer)Singleton<GameWorld>.Instance.MainPlayer;
+            if (fikaPlayer.PacketSender != null)
+            {
+                fikaPlayer.PacketSender.DestroyThis();
+            }
+        }
+
+        if (!FikaBackendUtils.IsTransit)
+        {
+            NetManagerUtils.StopPinger();
+        }
+        else
+        {
+            _server.HostReady = false;
+        }
+
+        _btrSpawn?.Invoke();
+        _btrSpawn = null;
+    }
+
+    public override Task InitializeLoot(LocationSettings.Location location)
+    {
+        if (FikaPlugin.Instance.Settings.NoLoot.Value)
+        {
+            NotificationManager.DisplayWarningNotification("NoLoot enabled, no loot will spawn and any stationary weapon WILL NOT WORK!");
+            location.Loot = [];
+        }
+
+        var lootDescriptor = ItemBinarySerializer.SerializeLootData(location.Loot,
+            FikaGlobals.SearchControllerSerializer);
+        _writer.PutEFTLootDataDescriptor(lootDescriptor);
+        LootData = _writer.CopyData();
+        _writer.Reset();
+        return Task.CompletedTask;
+    }
+
+    public byte[] GetHostLootItems()
+    {
+        if (LootData == null || LootData.Length == 0)
+        {
+            var gameWorld = Singleton<GameWorld>.Instance;
+            List<JsonLootItem> list = new(gameWorld.LootList.Count);
+            for (var i = 0; i < gameWorld.LootList.Count; i++)
+            {
+                var item = gameWorld.LootList[i];
+                if (item is LootItem lootItem && (item is not Corpse or ObservedCorpse))
+                {
+                    list.Add(SerializeLootItem(lootItem, gameWorld));
+                }
+            }
+            foreach (var lootableContainer in LocationScene.GetAllObjects<LootableContainer>(false))
+            {
+                if (lootableContainer.ItemOwner != null)
+                {
+                    list.Add(new JsonLootItem
+                    {
+                        Position = lootableContainer.transform.position,
+                        Rotation = lootableContainer.transform.rotation.eulerAngles,
+                        Item = lootableContainer.ItemOwner.RootItem,
+                        ValidProfiles = null,
+                        Id = lootableContainer.Id,
+                        IsContainer = true
+                    });
+                }
+            }
+            foreach (var stationaryWeapon in LocationScene.GetAllObjects<StationaryWeapon>(false))
+            {
+                if (stationaryWeapon != null && stationaryWeapon.ItemController != null)
+                {
+                    list.Add(new JsonLootItem
+                    {
+                        Position = stationaryWeapon.transform.position,
+                        Rotation = stationaryWeapon.transform.rotation.eulerAngles,
+                        Item = stationaryWeapon.ItemController.RootItem,
+                        ValidProfiles = null,
+                        Id = stationaryWeapon.Id,
+                        IsContainer = true
+                    });
+                }
+            }
+            list.Sort(LootCompare);
+
+            var lootDescriptor = ItemBinarySerializer.SerializeLootData(list, FikaGlobals.SearchControllerSerializer);
+            _writer.PutEFTLootDataDescriptor(lootDescriptor);
+
+            var data = _writer.CopyData();
+            _writer.Reset();
+            return data;
+        }
+
+        return LootData;
+    }
+
+    private JsonLootItem SerializeLootItem(LootItem lootItem, GameWorld gameWorld)
+    {
+        short num = -1;
+        if (gameWorld.Platforms.Length != 0 && lootItem.Platform != null)
+        {
+            num = (short)Array.IndexOf(gameWorld.Platforms, lootItem.Platform);
+        }
+        /*Corpse corpse;*/
+        //JsonLootItem lootItemPositionClass;
+        // TODO: Send corpses instead of killing the players...
+        /*if ((corpse = lootItem as Corpse) != null)
+        {
+            lootItemPositionClass = new GClass1397
+            {
+                Customization = corpse.Customization,
+                Side = corpse.Side,
+                Bones = (num > -1) ? corpse.TransformSyncsRelativeToPlatform : corpse.TransformSyncs,
+                ProfileID = corpse.PlayerProfileID,
+                IsZombieCorpse = corpse.IsZombieCorpse
+            };
+        }
+        else
+        {
+            lootItemPositionClass = new JsonLootItem();
+        }*/
+        var transform = lootItem.transform;
+        return new JsonLootItem
+        {
+            Position = (num > -1) ? transform.localPosition : transform.position,
+            Rotation = (num > -1) ? transform.localRotation.eulerAngles : transform.rotation.eulerAngles,
+            Item = lootItem.ItemOwner.RootItem,
+            ValidProfiles = lootItem.ValidProfiles,
+            Id = lootItem.StaticId,
+            IsContainer = lootItem.StaticId != null,
+            Shift = lootItem.Shift,
+            PlatformId = num
+        };
+    }
+
+    private int LootCompare(JsonLootItem a, JsonLootItem b)
+    {
+        return string.CompareOrdinal(a.Id, b.Id);
+    }
+
+    public void StopBotsSystem(bool fromCancel)
+    {
+        if (!fromCancel)
+        {
+            if (_botStateManager != null)
+            {
+                _botStateManager.UnassignBotsController();
+                GameObject.Destroy(_botStateManager);
+            }
+            var gameWorld = Singleton<GameWorld>.Instance;
+            if (gameWorld.ServerShellingController != null)
+            {
+                UpdateByUnity -= gameWorld.ServerShellingController.OnUpdate;
+            }
+            if (_botsController != null)
+            {
+                _botsController.StopGettingInfo();
+                if (!FikaBackendUtils.IsHeadless)
+                {
+                    _botsController.DestroyInfo(_localPlayer);
+                }
+            }
+        }
+
+        _bossSpawnScenario?.Stop();
+        if (_nonWavesSpawnScenario != null)
+        {
+            _nonWavesSpawnScenario.Stop();
+        }
+        if (_wavesSpawnScenario != null)
+        {
+            _wavesSpawnScenario.Stop();
+        }
+    }
+
+    public IEnumerator SyncTraps()
+    {
+        yield return new WaitForSeconds(5);
+
+        if (Location.EventTrapsData == null)
+        {
+            yield break;
+        }
+
+        if (_gameWorld.SyncModule == null)
+        {
+            Logger.LogError("SyncModule was null when trying to sync trap data!");
+            yield break;
+        }
+
+        BitWriterStream writer = new(new byte[2048]);
+        _gameWorld.SyncModule.Serialize(writer);
+
+        SyncTrapsPacket packet = new()
+        {
+            Data = new byte[writer.BytesWritten]
+        };
+        Buffer.BlockCopy(writer.Buffer, 0, packet.Data, 0, writer.BytesWritten);
+
+        _server.SendData(ref packet, DeliveryMethod.ReliableOrdered);
+    }
+
+    private bool IsBarbedWireTrap(TrapSyncable trap)
+    {
+        return trap.TrapType is ETrapType.BarbedWire;
+    }
+
+    private bool IsTrapDoorTrap(TrapSyncable trap)
+    {
+        return trap.TrapType is ETrapType.TrapDoor;
+    }
+
+    internal void RemoveBot(FikaBot fikaBot)
+    {
+        if (_botStateManager != null)
+        {
+            _botStateManager.RemoveBot(fikaBot);
+        }
+    }
+}
