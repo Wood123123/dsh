@@ -21,9 +21,10 @@ namespace Fika.Core.Main.Utils
     internal static class PickupStuckWatchdog
     {
         /// <summary>拾取/掠夺类状态：正常几帧就离开，给 5 秒已经很宽松。</summary>
-        private const float LootStateTimeout = 5f;
+        private const float LootStateTimeout = 8f;   // ★ 5 秒→8 秒，给正常拾取动画留余量
 
         /// <summary>放任务物品/绊线的动画本来就长，给 20 秒。</summary>
+        // [已停用] Plant 不再由看门狗处理 —— 放置任务是主动长操作，不该被判定卡死。
         private const float PlantStateTimeout = 20f;
 
         /// <summary>开门/破门动画也有正常的长度，给 8 秒。</summary>
@@ -128,16 +129,9 @@ namespace Fika.Core.Main.Utils
                 return;
             }
 
-            var currentState = player.MovementContext?.CurrentState;
-            var timeout = currentState == null
-                ? LootStateTimeout
-                : currentState.Name switch
-                {
-                    EPlayerState.Plant => PlantStateTimeout,
-                    EPlayerState.DoorInteraction => DoorStateTimeout,
-                    EPlayerState.BreachDoor => DoorStateTimeout,
-                    _ => LootStateTimeout,
-                };
+            // ★ 已删除 Plant / DoorInteraction / BreachDoor 的独立阈值。
+            // IsStuck 现在只放行 Pickup / Loot，其它状态根本走不到这里，所以统一用 LootStateTimeout。
+            var timeout = LootStateTimeout;
 
             var stuckFor = Time.time - _stuckSince;
             if (stuckFor < timeout || Time.time < _nextRepairTime)

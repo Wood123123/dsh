@@ -31,17 +31,13 @@ namespace Fika.Core.Main.Utils
         /// <summary>这些状态一旦"超时"就判定为卡死。</summary>
         private static bool IsStuckState(EPlayerState state)
         {
-            switch (state)
-            {
-                case EPlayerState.Pickup:
-                case EPlayerState.Loot:
-                case EPlayerState.DoorInteraction:
-                case EPlayerState.BreachDoor:
-                case EPlayerState.Plant:
-                    return true;
-                default:
-                    return false;
-            }
+            // ★ 只认真正会「卡死整局」的两个状态。
+            // 已移除 DoorInteraction / BreachDoor / Plant：
+            //   · Plant 是玩家主动进行的长操作（走位找点 + 按住 + 等动画），
+            //     实测 20 秒阈值会把正常放置打断，日志里出现过 4 次 (state=Plant) 强制取消。
+            //   · DoorInteraction / BreachDoor 的动画本来就有正常的长时长。
+            // 保留 Pickup / Loot：这两个才是「完成回调丢失 ⇒ 永久锁死整局捡不起东西」的场景。
+            return state == EPlayerState.Pickup || state == EPlayerState.Loot;
         }
 
         /// <summary>
@@ -82,7 +78,12 @@ namespace Fika.Core.Main.Utils
             {
             }
 
-            if (!stuckState && !blockedInteractions && !animatorStuck)
+            // ★ 只认 stuckState。blockedInteractions 已从判定中剔除 ——
+            // MovementContext.CanInteract 在 Sprint / Run / Idle 等几乎所有非交互状态下
+            // 都返回非 null（"当前状态不能交互"），拿它当独立判据会把正常跑步判成卡死。
+            // 实测误伤 62 次 (state=Sprint) + 2 次 (state=Run)。
+            // animatorStuck 同样降级为仅用于日志描述，不参与判定。
+            if (!stuckState)
             {
                 return false;
             }
