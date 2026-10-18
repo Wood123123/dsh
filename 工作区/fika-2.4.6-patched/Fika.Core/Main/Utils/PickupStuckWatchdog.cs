@@ -103,18 +103,18 @@ namespace Fika.Core.Main.Utils
                 }
             }
 
-            // ── ① 残留的物品栏锁 ───────────────────────────────────────────
-            // ItemController.Locked 只被三个移动状态设置、在它们的 Exit 里清除：
-            //   ApproachState          （接近交互物）
-            //   DoorInteractState      （开门）
-            //   StationaryPlayerState  （原地蹲/趴，还有一个 Spawned 设置点）
-            // 交互被打断（掉线、切图、死亡动画、主机卡顿）时 Exit 不会被调用，锁就永久挂着。
-            // 之后 ItemController.CheckItemAction 会抛
-            //   PlayerIsBusyError: Cannot apply {item} because {target} is currently being modified
-            // ⇒ 该玩家之后的一切物品操作全部失败，直到本局结束。
-            // 注意：这个锁【不会】被"重发库存"修掉 —— 重发换的是 inventory 数据，
-            //       锁是运行时标志，两回事。
-            TryClearStuckInventoryLock(player);
+            // ── ① 残留的物品栏锁 —— ★ 已改为【手动】触发，不再每秒自动清 ──────
+            // 原先是自动清：只要 Locked 为 true 且状态名不在白名单里就立刻解。
+            // 实测误伤 55 次（state=Idle/Run/Sprint），每次都打断正在进行中的物品操作：
+            //   [LootDiag] ★ 本地被拒 ... 原因: Cannot apply item weapon...
+            // ⇒ 玩家表现为「装备失败 / 手卡住 / 放置被打断」。
+            //
+            // 根因：ItemController.Locked 在【一切正常物品操作期间】本来就是 true（几百毫秒），
+            //       而 Plant（放任务道具）合法持锁可达 60 秒，Loot（搜容器）也可能很久。
+            //       任何「发现就清」的自动逻辑都必然误伤，阈值调到多大都不安全。
+            //
+            // 现在改为：默认完全不动；玩家按 End（可配）时手动调用 ReleaseNow()。
+            // 零误伤，因为只在你确认卡住时才执行。
 
             // ── ② 卡住的拾取/交互状态 ─────────────────────────────────────
             if (!NativeInteractionRelease.IsStuck(player, out var detail))
@@ -156,70 +156,99 @@ namespace Fika.Core.Main.Utils
             _repairCount = 0;
             _lockRepairCount = 0;
             _proceedExpiredCount = 0;
-            _lastLockReport = EPlayerState.None;
         }
 
         private static int _lockRepairCount;
-        private static EPlayerState _lastLockReport;
 
         /// <summary>
-        /// 清掉残留的物品栏锁。
+        /// ★ 手动解卡：玩家按 End（可配）时调用。
         ///
-        /// 判据用的是 EFT 自己的 <c>MovementContext.StateLocksInventory</c>（由那三个状态在
-        /// Enter/Exit/Spawned 里维护）**加上**对当前状态名的二次确认 —— 两条都说不该锁，才动手。
-        /// 这样即使 StateLocksInventory 本身也烂了，只要状态名不对就仍能救回来。
+        /// 一次做三件事，顺序有讲究：
+        ///   ① 丢弃主机永远没回复的 proceed 回调 —— 不清它，WaitingForCallback 永真，
+        ///      手部控制器会一直拒绝开火/换弹，后面两步白做。
+        ///   ② 释放卡住的拾取/交互状态 —— 回到 Idle，让动画机和交互系统重新起步。
+        ///   ③ 清残留的物品栏锁 —— 放最后，因为前两步的 Exit 流程可能自己会动它；
+        ///      清早了会被 Exit 再设回去。
         ///
-        /// 状态为 null（战局加载中 / 卸载中）时不动：那种时刻 Locked 可能是引擎的正常中间态，
-        /// 贸然解锁会破坏加载流程。真正的残留锁场景里玩家一定在正常移动，状态必然有值。
+        /// 不看当前状态名、不加阈值、不做冷却 —— 因为这是玩家主动按的键。
+        /// 这样 Plant（合法持锁 60 秒）、Loot（搜容器）等长操作永远不会被误伤。
         /// </summary>
-        private static void TryClearStuckInventoryLock(Player player)
+        internal static void ReleaseNow(Player player)
         {
+            if (player == null)
+            {
+                return;
+            }
+
+            var stateText = "unknown";
+            var movementContext = player.MovementContext;
+            if (movementContext?.CurrentState != null)
+            {
+                stateText = movementContext.CurrentState.Name.ToString();
+            }
+
+            var lockedText = "n/a";
+            try
+            {
+                lockedText = player.InventoryController != null && player.InventoryController.Locked
+                    ? "locked"
+                    : "unlocked";
+            }
+            catch
+            {
+                // 忽略
+            }
+
+            // ① proceed 回调（全量清，不看年龄 —— 手动触发就是要立刻恢复）
+            var dropped = 0;
+            if (player is FikaPlayer fikaPlayer)
+            {
+                try
+                {
+                    dropped = fikaPlayer.ExpireStaleProceedCallbacks(0f);
+                }
+                catch (Exception exception)
+                {
+                    FikaGlobals.LogWarning($"[ManualRelease] proceed expiry failed: {exception.Message}");
+                }
+            }
+
+            // ② 交互/拾取状态
+            var released = false;
+            try
+            {
+                NativeInteractionRelease.Release(player, "manual-End-key");
+                released = true;
+            }
+            catch (Exception exception)
+            {
+                FikaGlobals.LogWarning($"[ManualRelease] state release failed: {exception.Message}");
+            }
+
+            // ③ 物品栏锁
+            var unlocked = false;
             try
             {
                 var controller = player.InventoryController;
-                if (controller == null || !controller.Locked)
+                if (controller != null && controller.Locked)
                 {
-                    _lastLockReport = EPlayerState.None;
-                    return;
-                }
-
-                var movementContext = player.MovementContext;
-                var currentState = movementContext?.CurrentState;
-                if (currentState == null)
-                {
-                    // 状态还没就绪，别动
-                    return;
-                }
-
-                var stateName = currentState.Name;
-
-                // 状态确实要求锁 → 正常，别动它。
-                // 注意：MovementContext.StateLocksInventory 是【只写】属性（没有 getter），
-                // 所以这里只能用状态名判定 —— 那三个状态的 Enter/Exit/Spawned 才是它唯一的写入方。
-                if (IsInventoryLockState(stateName))
-                {
-                    _lastLockReport = EPlayerState.None;
-                    return;
-                }
-
-                controller.Locked = false;
-                _lockRepairCount++;
-
-                if (_lastLockReport != stateName)
-                {
-                    _lastLockReport = stateName;
-                    FikaGlobals.LogWarning($"[InventoryLockFix] detected and cleared a leftover inventory lock " +
-                                           $"(state={stateName}, cleared=#{_lockRepairCount}) — " +
-                                           $"this is what causes \"equip fails / hands stuck\"，已自动恢复。");
+                    controller.Locked = false;
+                    unlocked = true;
+                    _lockRepairCount++;
                 }
             }
             catch (Exception exception)
             {
-                FikaGlobals.LogWarning($"[InventoryLockFix] failed: {exception.Message}");
+                FikaGlobals.LogWarning($"[ManualRelease] unlock failed: {exception.Message}");
             }
+
+            FikaGlobals.LogWarning(
+                $"[ManualRelease] End 键手动解卡 (state={stateText}, inventory={lockedText}) → " +
+                $"proceed 清理 {dropped} 条, 状态释放 {(released ? "是" : "否")}, " +
+                $"物品栏锁 {(unlocked ? "已解" : "未锁")}（累计手动解锁 #{_lockRepairCount}）");
         }
 
-        /// <summary>这三个状态会合法地锁住物品栏。</summary>
+        /// <summary>这三个状态会合法地锁住物品栏（仅供文档参考，手动解卡不再使用）。</summary>
         private static bool IsInventoryLockState(EPlayerState state)
         {
             switch (state)
@@ -227,6 +256,9 @@ namespace Fika.Core.Main.Utils
                 case EPlayerState.Approach:
                 case EPlayerState.DoorInteraction:
                 case EPlayerState.Stationary:
+                case EPlayerState.Plant:
+                case EPlayerState.Loot:
+                case EPlayerState.Pickup:
                     return true;
                 default:
                     return false;

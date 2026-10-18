@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using BepInEx.Configuration;
 using Comfort.Common;
@@ -91,6 +91,9 @@ public sealed class FikaConfig(ConfigFile config)
 
     // Coop | Revival
     public ConfigEntry<KeyboardShortcut> GiveUpKey { get; set; }
+
+    // Coop | Stuck Recovery (dsh-fix)
+    public ConfigEntry<KeyboardShortcut> ReleaseStuckHandsKey { get; set; }
 
     // Coop | Debug
     public ConfigEntry<KeyboardShortcut> FreeCamButton { get; set; }
@@ -695,6 +698,28 @@ public sealed class FikaConfig(ConfigFile config)
                 Order = 0
             }),
             "Give Up Key", ref failed, headers);
+
+        // Coop | Stuck Recovery (dsh-fix)
+        //
+        // 手动解卡键。按一下做三件事：清 proceed 回调 → 释放卡住的拾取/交互状态 → 清物品栏锁。
+        // 为什么是手动的：ItemController.Locked 在一切正常物品操作期间本来就是 true，
+        // 而 Plant（放任务道具）合法持锁可达 60 秒。任何「发现就清」的自动逻辑都会误伤，
+        // 之前那版自动清锁实测误伤 55 次，把正在进行的物品操作打断成
+        // "Cannot apply item weapon"。手动触发零误伤。
+        const string coopStuckHeader = "Coop | Stuck Recovery";
+
+        ReleaseStuckHandsKey = SetupSetting(coopStuckHeader, "Release Stuck Hands Key", new KeyboardShortcut(KeyCode.End),
+            new ConfigDescription(
+                "按此键：清掉主机没回复的手部回调、退出卡住的拾取/交互状态、解开残留的物品栏锁。" +
+                "只在真的卡住时才按 —— 正常游玩不要碰。" +
+                "默认 End（注意：Fika 的 Give Up Key 默认也是 End，如果冲突请改掉其中一个）。",
+                tags: new ConfigurationManagerAttributes
+                {
+                    Category = coopStuckHeader,
+                    DispName = "Release Stuck Hands Key",
+                    Order = 0
+                }),
+            "Release Stuck Hands Key", ref failed, headers);
 
         // Coop | Debug
 

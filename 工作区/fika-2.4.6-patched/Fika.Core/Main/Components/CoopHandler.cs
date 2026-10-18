@@ -200,7 +200,21 @@ public class CoopHandler : MonoBehaviour
         //   只恢复表现层状态，不碰物品/地址/操作，因此不会导致复制或回滚。
         if (_isClient || FikaBackendUtils.IsServer)
         {
-            PickupStuckWatchdog.Tick(Singleton<GameWorld>.Instance?.MainPlayer);
+            var mainPlayer = Singleton<GameWorld>.Instance?.MainPlayer;
+            PickupStuckWatchdog.Tick(mainPlayer);
+
+            // ★ dsh-fix: 手动解卡键（默认 End）。
+            //   原来库存锁是每秒自动清的，实测误伤 55 次（state=Idle/Run/Sprint），
+            //   每次都会打断正在进行的物品操作 → "Cannot apply item weapon" → 装备失败/手卡住。
+            //   根因：Locked 在一切正常物品操作期间本来就是 true（几百毫秒），
+            //   而 Plant（放任务道具）合法持锁可达 60 秒，Loot（搜容器）也可能很久。
+            //   任何自动阈值都不安全 ⇒ 改成玩家主动按键，不看状态名、不计时、零误伤。
+            if (mainPlayer != null &&
+                FikaPlugin.Instance != null &&
+                FikaPlugin.Instance.Settings.ReleaseStuckHandsKey.Value.IsDown())
+            {
+                PickupStuckWatchdog.ReleaseNow(mainPlayer);
+            }
         }
 
         if (ShouldSync)
