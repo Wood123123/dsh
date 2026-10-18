@@ -78,3 +78,7 @@ secrets.json
 缓存区/素材包/*.zip
 # Fika 5.0 的移植版二进制包（不入库）
 Fika-3.*.zip
+
+# ── 参考源码里的 git 仓库（不能当 submodule / 不能入库）──────────
+缓存区/参考源码/_fika_main/
+缓存区/参考源码/_ragdollkinetics/
