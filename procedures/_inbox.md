@@ -22,3 +22,5 @@
 
 - **「不能跑 / 卡在正在使用药物」先看 `MedEffect.Residue` 抛的 `Trying to get parent of an item that doesn't have a parent`** —— `Item.get_Parent()` 是**主动 throw**（CurrentAddress 为 null 就抛），不是空引用。`Residue()` 末尾必然调它去发 `DrainItemEventArgs`，而联机下 Fika 的库存同步可能已把见底的食物移出背包 ⇒ 竞态 ⇒ Effect 状态机中断 ⇒ MedsController 收不了尾。修法两条：① Prefix `MedEffect.Residue`，`MedItem.CurrentAddress == null` 就 return false 跳过；② 手动解卡里补 `HandsController.FastForwardCurrentState()` + `Player.Proceed(false, null)`（库存锁/proceed 回调/movement state 在这场景下都是正常的，光查那三项永远救不回来）。
   **实测确认（2026-10-18）**：卡住后用急救包能恢复 —— 因为 `Player.Proceed(Meds, ...)` 内部会重建 HandsController，正好等价于我们在 `ReleaseNow` 里补的 `hands.FastForwardCurrentState() + player.Proceed(false, null)`。反过来说明根因就是 HandsController/Effect 状态机卡死，不是负重也不是库存锁。
+
+- **`.new` 后缀永远不会自动生效** —— BepInEx 只加载 `*.dll`，工作区里也没有任何脚本会自动改名。所以「部署时文件被占用 ⇒ 放 `.new`」之后**必须**：停进程 → 手工改名 → 重启。实测踩过：无头端0 的 `.new` 放了 5 个多小时、进程重启过一次，仍在跑旧版（现役文件写入时间停在放 `.new` 之前），导致客户端 CRC 与新无头端不一致、别人「创建战局」报 FIKA_MISMATCH。另外 **Fika 的 mod CRC 用的是 CRC32C（Castagnoli，多项式 0x82F63B78），不是 IEEE CRC32** —— 源码 `FikaModHandler.cs:50 CRC32C.Compute(...)`，用错算法会得出「谁的码都不对」的错误结论。
