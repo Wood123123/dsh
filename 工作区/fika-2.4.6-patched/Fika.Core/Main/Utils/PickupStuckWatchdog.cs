@@ -1,5 +1,6 @@
 using System;
 using EFT;
+using Fika.Core.Main.ClientClasses;
 using Fika.Core.Main.Players;
 using UnityEngine;
 
@@ -177,6 +178,33 @@ namespace Fika.Core.Main.Utils
         {
             if (player == null)
             {
+                return;
+            }
+
+            // ★ 濒死（downed）/ 死亡时【完全不干预】。
+            //   倒地时 FikaPlayer.ToggleDowned(true) 会设：
+            //     ClientHealthController.Downed = true
+            //     MovementContext.IsInPronePose = true / IsAxesIgnored = true
+            //     SimpleCharacterController.IsMoveIgnored = true
+            //   并挂上 Bleedout 组件（按住 End 3 秒 = 放弃）。
+            //   而 ReleaseNow 会把 movement state 切回 Idle 并解开旋转锁，
+            //   正好和上面几项打架 ⇒ 会打断「按住 End 3 秒自杀」的流程。
+            try
+            {
+                if (player.HealthController == null || !player.HealthController.IsAlive)
+                {
+                    return;
+                }
+
+                if (player.ActiveHealthController is ClientHealthController clientHealth
+                    && clientHealth.Downed)
+                {
+                    return;
+                }
+            }
+            catch
+            {
+                // 拿不到健康状态时保守跳过，宁可不救也不打断倒地流程
                 return;
             }
 
