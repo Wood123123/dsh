@@ -256,7 +256,18 @@ function New-StructXml([string]$title, [string]$body, [string[]]$cats) {
 
 function Get-DefaultCategories {
     # 博客园靠 [Markdown] 这个伪分类决定按 Markdown 解析正文
-    if ($Categories.Count -gt 0) { return $Categories }
+    # 命令行经 powershell.exe -File 传参时数组会被合并成一个字符串，
+    # 所以约定用 | 或 ; 分隔，这里统一拆开。
+    if ($Categories.Count -gt 0) {
+        $flat = @()
+        foreach ($c in $Categories) {
+            foreach ($piece in ($c -split '[|;]')) {
+                $t = $piece.Trim()
+                if ($t) { $flat += $t }
+            }
+        }
+        if ($flat.Count -gt 0) { return $flat }
+    }
     return @('[随笔分类]记录', '[Markdown]')
 }
 
@@ -278,13 +289,22 @@ function Do-New {
         "<string>$(ConvertTo-XmlText $cred.BlogId)</string>",
         "<string>$(ConvertTo-XmlText $cred.User)</string>",
         "<string>$(ConvertTo-XmlText $cred.Token)</string>",
-        "<value>$struct</value>".Replace('<value>','').Replace('</value>',''),
+        $struct.Trim(),
         '<boolean>1</boolean>'
     )
     if ($DryRun) { return }
     $newId = $xml.SelectSingleNode('//methodResponse/params/param/value/string').InnerText
     Write-Host "✅ 已发布  postid=$newId" -ForegroundColor Green
     Write-Host "   https://www.cnblogs.com/$($cred.BlogId)/p/$newId"
+
+    # ★ 回写 .postid，供下次 -Action publish 走 edit 而不是重复 newPost
+    try {
+        $idFile = (Resolve-Path $File).Path + '.postid'
+        [System.IO.File]::WriteAllText($idFile, $newId, (New-Object System.Text.UTF8Encoding($false)))
+        Write-Host "   已记录 $([System.IO.Path]::GetFileName($idFile)) = $newId（下次 publish 会走 edit）" -ForegroundColor DarkGray
+    } catch {
+        Write-Host "   ⚠ 回写 .postid 失败: $($_.Exception.Message)" -ForegroundColor Yellow
+    }
 }
 
 function Do-Edit {
@@ -300,11 +320,13 @@ function Do-Edit {
     $cats = Get-DefaultCategories
     $cred = Get-CnblogsCredential
     $struct = New-StructXml $t $body $cats
+    # XML-RPC 的 struct 参数必须整体包在 <value><struct>…</struct></value> 里，
+    # Invoke-MetaWeblog 会自动套 <value>，所以这里直接传 $struct（含 <struct> 标签）
     $xml = Invoke-MetaWeblog 'metaWeblog.editPost' @(
         "<string>$PostId</string>",
         "<string>$(ConvertTo-XmlText $cred.User)</string>",
         "<string>$(ConvertTo-XmlText $cred.Token)</string>",
-        ($struct -replace '^<struct>\s*|\s*</struct>$','').Trim(),
+        $struct.Trim(),
         '<boolean>1</boolean>'
     )
     if ($DryRun) { return }
