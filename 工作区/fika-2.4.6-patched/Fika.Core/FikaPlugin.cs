@@ -160,6 +160,21 @@ public sealed class FikaPlugin : BaseUnityPlugin
             Logger.LogWarning("[PickupBypass] could not install the ground loot pickup bypass " +
                               $"(falling back to the native pickup path): {exception.Message}");
         }
+
+        // ★ dsh-fix: 防止喝完/吃完东西后药效状态机卡死 ⇒ 不能跑。
+        //   喝牛奶时 MedEffect.Residue() 末尾会调 MedItem.Parent，而联机下物品可能已被
+        //   Fika 库存同步提前移除 ⇒ Item.get_Parent() 主动 throw（不是空引用）
+        //   ⇒ Effect 状态机中断 ⇒ MedsController 收不了尾 ⇒ 卡在"正在使用药物"。
+        //   Prefix 检查 CurrentAddress，物品已不在背包就跳过整个 Residue。
+        //   只在异常路径生效，正常吃喝结算完全不受影响。
+        try
+        {
+            _patchManager.EnablePatch(new Fika.Core.Main.Patches.Health.MedEffectResidueGuardPatch());
+        }
+        catch (Exception exception)
+        {
+            Logger.LogWarning("[MedEffectGuard] could not install the residue guard: " + exception.Message);
+        }
     }
 
     /// <summary>

@@ -253,7 +253,34 @@ namespace Fika.Core.Main.Utils
                 FikaGlobals.LogWarning($"[ManualRelease] state release failed: {exception.Message}");
             }
 
-            // ③ 物品栏锁
+            // ③ 手部控制器 —— ★ 这一步才是「喝完东西后不能跑」的正解
+            //
+            // 日志实测：喝牛奶时 MedEffect.Residue() 因为物品已被 Fika 库存同步提前移除，
+            // Item.get_Parent() 直接 throw（不是空引用，是 EFT 主动抛）。
+            // 异常打断了 Effect 状态机 ⇒ MedsController 收不了尾 ⇒ 玩家卡在「正在使用药物」。
+            // 那种情况下 Locked 是 false、proceed 是 0 条、movement state 还是 Idle，
+            // 所以前面 ①②③ 全都判定「没问题」⇒ 必须显式重置手部控制器。
+            //
+            // 用的组合来自 FikaPlayer.ToggleDowned 的成熟写法：
+            //   HandsController.FastForwardCurrentState() → 让当前控制器跳到终态
+            //   Player.Proceed(false, null)               → 重新建立空手控制器
+            var handsReset = false;
+            try
+            {
+                var hands = player.HandsController;
+                if (hands != null)
+                {
+                    hands.FastForwardCurrentState();
+                    player.Proceed(false, null);
+                    handsReset = true;
+                }
+            }
+            catch (Exception exception)
+            {
+                FikaGlobals.LogWarning($"[ManualRelease] hands reset failed: {exception.Message}");
+            }
+
+            // ④ 物品栏锁
             var unlocked = false;
             try
             {
@@ -273,6 +300,7 @@ namespace Fika.Core.Main.Utils
             FikaGlobals.LogWarning(
                 $"[ManualRelease] End 键手动解卡 (state={stateText}, inventory={lockedText}) → " +
                 $"proceed 清理 {dropped} 条, 状态释放 {(released ? "是" : "否")}, " +
+                $"手部重置 {(handsReset ? "是" : "否")}, " +
                 $"物品栏锁 {(unlocked ? "已解" : "未锁")}（累计手动解锁 #{_lockRepairCount}）");
         }
 
