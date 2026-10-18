@@ -81,4 +81,4 @@ Fika-3.*.zip
 
 # ── 参考源码里的 git 仓库（不能当 submodule / 不能入库）──────────
 缓存区/参考源码/_fika_main/
-缓存区/参考源码/_ragdollkinetics/
+缓存区/参考源码/_ragdollkinetics/缓存区/参考源码/_smoothie/
