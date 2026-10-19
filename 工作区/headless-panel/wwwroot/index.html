@@ -361,8 +361,18 @@ function renderTelemetry(data) {
     const huArr = trend.map(t => t[3]);
     const clArr = trend.map(t => t[4]);
 
+    // 数据陈旧：超过 50 秒就不再累加秒数。
+    // 否则无头端停了一夜后这里会显示成 "数据陈旧 66987.1s" —— 那个数字既没有意义，
+    // 又会一直增长，看上去像面板在实时报一个越来越大的延迟。
+    // 超过阈值后统一显示"用时超过50s"，表示"这份数据早就过期了"，具体多久不再关心。
+    const STALE_SECONDS_CAP = 50;
+    const ageText = it.ageSeconds == null
+      ? '?'
+      : (it.ageSeconds > STALE_SECONDS_CAP
+          ? `用时超过${STALE_SECONDS_CAP}s`
+          : `${it.ageSeconds}s`);
     const staleTag = it.stale
-      ? `<span class="pill bad">数据陈旧 ${it.ageSeconds != null ? it.ageSeconds : '?'}s</span>`
+      ? `<span class="pill bad">数据陈旧 ${ageText}</span>`
       : `<span class="pill ok">实时</span>`;
 
     const raidTag = c.inRaid

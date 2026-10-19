@@ -381,3 +381,17 @@ Build: `dotnet build -c Release -p:SPT_DIR="<SPT_Runtime>"` (needs .NET 10 SDK).
 ## 许可
 
 MIT
+## 日志保留策略
+
+战局日志（时间线的数据源）按两条规则清理，任一超出即删：
+
+| 规则 | 阈值 | 说明 |
+| --- | --- | --- |
+| **按时间** | 14 天 | `LogStore.Retention` |
+| **按局数** | **最新 20 局** | `LogStore.MaxRaidGroups`，超出后**整局**删（一局含多实例多段） |
+
+- **自动触发**：每局结束（`CloseSegment`）后按需清理一次，节流 10 分钟、后台线程执行，不阻塞关段路径
+- **手动触发**：`POST /headlesspanel/api/logs/prune`
+- **"一局"的判定**：复用 `LogStore.BuildRaids` —— 它按 RaidCode / 地图 / 时间把断线重连的多个段归为同一局，是唯一权威；不按目录时间硬切
+- **正在写入的段不会被删**（避免 Flush 把它重建出来留下残片）
+- `#idle#` 段不算"一局"，仍只受 14 天规则约束

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace Dsh.HeadlessPanel;
 
@@ -495,6 +496,40 @@ public static class LogStore
         var meta = new List<RaidSegment>();
         lock (Gate) { CloseSegmentLocked(instance, ts, writes, meta); }
         PerformWrites(writes, meta);
+
+        // ★ 一局刚结束 —— 这是"局数"增长的唯一时刻，顺手按局数清理一次。
+        //   Prune 只在手动点「清理」时才会跑，所以以前 20 局的上限永远不生效。
+        MaybeAutoPrune();
+    }
+
+    /// <summary>自动清理的最小间隔 —— 避免每次关段都把 meta.jsonl 全量扫一遍。</summary>
+    private static readonly TimeSpan AutoPruneInterval = TimeSpan.FromMinutes(10);
+    private static DateTime _lastAutoPruneUtc = DateTime.MinValue;
+
+    /// <summary>
+    /// 关段之后按需触发一次 <see cref="Prune"/>：节流 + 丢到后台线程。
+    ///
+    /// 为什么不能直接同步调用：Prune 里的 BuildRaids 要读遍所有 meta.jsonl，
+    /// 放在关段路径上会把"战局刚结束"那一刻的响应拖慢。
+    /// 而清理本身不紧急 —— 晚几秒删掉最老的一局，对它没有任何影响。
+    /// </summary>
+    private static void MaybeAutoPrune()
+    {
+        var now = DateTime.UtcNow;
+        lock (Gate)
+        {
+            if (now - _lastAutoPruneUtc < AutoPruneInterval) return;
+            _lastAutoPruneUtc = now;
+        }
+
+        try
+        {
+            _ = Task.Run(() =>
+            {
+                try { Prune(); } catch { }
+            });
+        }
+        catch { }
     }
 
     /// <summary>把某个段缓冲区里的行收集成一条待写记录（不碰磁盘）。</summary>
@@ -883,6 +918,19 @@ public static class LogStore
         return result;
     }
 
+    /// <summary>
+    /// ★ 战局日志按【局数】保留的上限（0 = 只按时间，不按局数）。
+    ///
+    /// 原来只有 <see cref="Retention"/>（14 天）这一条规则 —— 一天打 30 局就会攒 30 局，
+    /// 时间线的战局下拉框越来越长，每局几十万行的段文件也一直占盘。
+    /// 现在额外只保留最新 N 局，更老的【整局】一起删掉。
+    ///
+    /// 为什么用 BuildRaids 而不是按目录时间：一局包含多个实例的多个段
+    /// （无头端 / 每个客户端 / 并入的服务端段），而且断线重连会把同一局拆成好几段。
+    /// BuildRaids 才是"什么算一局"的唯一权威，直接复用它，规则不会跑偏。
+    /// </summary>
+    public const int MaxRaidGroups = 20;
+
     public static void Prune()
     {
         try
@@ -890,6 +938,7 @@ public static class LogStore
             if (!Directory.Exists(Root)) return;
             var cutoff = DateTime.UtcNow - Retention;
 
+            // ① 按时间删（原有规则，保留）
             foreach (var s in AllSegments())
             {
                 if (s.StartedUtc >= cutoff) continue;
@@ -899,6 +948,41 @@ public static class LogStore
                     if (File.Exists(p)) File.Delete(p);
                 }
                 catch { }
+            }
+
+            // ② 按局数删：只保留最新 MaxRaidGroups 局
+            if (MaxRaidGroups <= 0) return;
+
+            List<RaidGroup> raids;
+            try { raids = BuildRaids(int.MaxValue); }   // 已按 StartedUtc 倒序，且只含"真正的一局"
+            catch { return; }
+
+            if (raids.Count <= MaxRaidGroups) return;
+
+            // ★ 正在写入的段不能删 —— 删掉后 Flush 会把它重建出来，反而留下残片。
+            //   Open 是按【实例名】索引的，所以要取 Values 里的段 id。
+            HashSet<string> openIds;
+            lock (Gate)
+            {
+                openIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var seg in Open.Values)
+                {
+                    if (seg != null && !string.IsNullOrEmpty(seg.Id)) openIds.Add(seg.Id);
+                }
+            }
+
+            foreach (var oldRaid in raids.Skip(MaxRaidGroups))
+            {
+                foreach (var seg in oldRaid.Segments)
+                {
+                    if (seg == null || openIds.Contains(seg.Id)) continue;
+                    try
+                    {
+                        var p = SegmentPath(seg);
+                        if (File.Exists(p)) File.Delete(p);
+                    }
+                    catch { }
+                }
             }
         }
         catch { }
