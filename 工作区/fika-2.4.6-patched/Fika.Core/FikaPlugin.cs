@@ -151,15 +151,10 @@ public sealed class FikaPlugin : BaseUnityPlugin
         //   主机仍权威：操作照走 ClientInventoryController，战利品无法本地复制。
         //   目标方法按【形状】匹配（static + Player/IItemOperationResult/Item/IPlayer），
         //   EFT 改混淆名也不受影响；找不到时只记一条警告，退回原生拾取路径，不崩。
-        try
-        {
-            _patchManager.EnablePatch(new Fika.Core.Main.Patches.World.InteractionContextHelper_PickupAction_Patch());
-        }
-        catch (Exception exception)
-        {
-            Logger.LogWarning("[PickupBypass] could not install the ground loot pickup bypass " +
-                              $"(falling back to the native pickup path): {exception.Message}");
-        }
+        //   安装入口只留一个：EnableModulePatches() 里的 PatchManager 会自动发现并安装
+        //   这个 FikaModulePatch。这里绝不能再手动 EnablePatch 一次——重复挂钩会让一次拾取
+        //   发两次库存操作，服务端把第二次当重复请求拒掉（丢弃背包"闪一下消失"就是这么来的）。
+        VerifyPickupBypassInstallation();
 
         // ★ dsh-fix: 防止喝完/吃完东西后药效状态机卡死 ⇒ 不能跑。
         //   喝牛奶时 MedEffect.Residue() 末尾会调 MedItem.Parent，而联机下物品可能已被
@@ -203,6 +198,60 @@ public sealed class FikaPlugin : BaseUnityPlugin
     private void EnableModulePatches()
     {
         _patchManager.EnablePatches();
+    }
+
+    /// <summary>
+    /// 只读校验：拾取绕过补丁在本进程是否恰好挂了一次。
+    /// 不做任何 Enable/Unpatch，也不碰其它 mod 在同一目标方法上的 Prefix。
+    /// </summary>
+    private void VerifyPickupBypassInstallation()
+    {
+        try
+        {
+            var patchType = typeof(Fika.Core.Main.Patches.World.InteractionContextHelper_PickupAction_Patch);
+            var prefix = HarmonyLib.AccessTools.Method(patchType, "Prefix");
+            if (prefix == null)
+            {
+                Logger.LogError("[PickupBypass] verification failed: Prefix method not found");
+                return;
+            }
+
+            var count = 0;
+            foreach (var target in HarmonyLib.Harmony.GetAllPatchedMethods())
+            {
+                var info = HarmonyLib.Harmony.GetPatchInfo(target);
+                if (info?.Prefixes == null)
+                {
+                    continue;
+                }
+
+                foreach (var patch in info.Prefixes)
+                {
+                    if (patch.PatchMethod == prefix)
+                    {
+                        count++;
+                    }
+                }
+            }
+
+            switch (count)
+            {
+                case 1:
+                    Logger.LogInfo("[PickupBypass] verified: own prefix count=1");
+                    break;
+                case 0:
+                    Logger.LogError("[PickupBypass] verification failed: own prefix count=0 " +
+                                    "(module patch manager did not install the pickup bypass)");
+                    break;
+                default:
+                    Logger.LogError($"[PickupBypass] verification failed: own prefix count={count}, expected=1");
+                    break;
+            }
+        }
+        catch (Exception exception)
+        {
+            Logger.LogWarning("[PickupBypass] verification failed: " + exception.Message);
+        }
     }
 
 #if RELEASE || GOLDMASTER
