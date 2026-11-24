@@ -1,4 +1,4 @@
-﻿using CommonAssets.Scripts.Game;
+using CommonAssets.Scripts.Game;
 using JsonType;
 using System.Collections.Generic;
 using Comfort.Common;
@@ -314,6 +314,13 @@ public class FikaHostTransitController : LocalTransitController
 
     public override void Transit(TransitPoint point, int playersCount, string hash, Dictionary<string, ProfileKey> keys, Player player)
     {
+        // 记录转场目的地图。无头端没有本地玩家，进不了下面的 IsYourPlayer 分支，
+        // 但主机侧同样需要这个目的地图来纠正新战局的 SelectedLocation（否则整局没有撤离点）。
+        if (point != null && point.parameters != null && !string.IsNullOrEmpty(point.parameters.location))
+        {
+            FikaBackendUtils.TransitTargetLocation = point.parameters.location;
+        }
+
         if (player.IsYourPlayer)
         {
             var location = point.parameters.location;

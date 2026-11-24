@@ -251,14 +251,18 @@ public class ClientGameController(IFikaGame game, EUpdateQueue updateQueue, Game
     public override async Task InitializeLoot(LocationSettings.Location location)
     {
         _abstractGame.SetMatchmakerStatus(LocaleUtils.UI_RETRIEVE_LOOT.Localized());
-        if (!FikaBackendUtils.IsReconnect)
-        {
-            await RetrieveLootFromServer(true, location);
-        }
-        else
-        {
-            await RetrieveLootFromServer(false, location);
-        }
+        await RetrieveLootFromServer(!FikaBackendUtils.IsReconnect, location);
+        location.Loot = LootItems;
+    }
+
+    /// <summary>
+    /// Retrieves the loot pool without registering the local player. This lets
+    /// loot, exfils, and interactables initialize while the local player loads.
+    /// </summary>
+    public async Task InitializeLootData(LocationSettings.Location location)
+    {
+        _abstractGame.SetMatchmakerStatus(LocaleUtils.UI_RETRIEVE_LOOT.Localized());
+        await RetrieveLootFromServer(false, location);
         location.Loot = LootItems;
     }
 

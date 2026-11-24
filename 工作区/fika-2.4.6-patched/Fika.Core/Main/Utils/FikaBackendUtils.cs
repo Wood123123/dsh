@@ -1,4 +1,4 @@
-﻿using Diz.Binding;
+using Diz.Binding;
 using EFT.Communications;
 using JsonType;
 using System;
@@ -13,6 +13,7 @@ using Fika.Core.Main.Patches.VOIP;
 using Fika.Core.Networking;
 using Fika.Core.Networking.Http;
 using Fika.Core.Networking.Models;
+using Fika.Core.UI.Models;
 using HarmonyLib;
 using Newtonsoft.Json;
 
@@ -76,6 +77,14 @@ public static class FikaBackendUtils
     /// If the current raid is a transit
     /// </summary>
     public static bool IsTransit { get; set; }
+    /// <summary>
+    /// 转场事件里记录的目的地图 id（如 TarkovStreets）。
+    /// 转移后新建战局时，<see cref="RaidSettings.SelectedLocation"/> 有可能仍是源地图
+    /// （原版替换 RaidSettings 的时机与 Fika 拦截 LocalGameCreate 存在竞争），
+    /// 那样 CoopGame.InitPlayer 会用源地图的 exits 初始化撤离点，导致整局没有撤离点。
+    /// 用它来纠正。
+    /// </summary>
+    public static string TransitTargetLocation { get; set; }
     /// <summary>
     /// If the current session is spectator only
     /// </summary>
@@ -212,6 +221,36 @@ public static class FikaBackendUtils
         }
 
         RaidCode = result.RaidCode;
+
+        // ── 加入战局时补上「主机地图」────────────────────────────────────────
+        // 现状：HostLocationId 只在「匹配列表点加入」处被赋值（MatchMakerUIScript:533）；
+        //       邀请进组、无头 RequesterJoinRaid 两条路都不赋值 ⇒ 客户端带着上一张地图
+        //       创建本地战局 ⇒ 撤离点表用错图 ⇒ 一个撤离点都没有
+        //       （证据：Peterpia 森林局用海关表，Initializing Exfils: Id bigmap）。
+        // 做法：/fika/raid/join 的应答不含地图，但 /fika/location/raids 返回【全部】战局
+        //       （服务端 LocationController 遍历 Matches，不按地图过滤），
+        //       用 serverId 找到这一局即可读出 Location。
+        try
+        {
+            var raids = FikaRequestHandler.LocationRaids(new RaidSettings());
+            if (raids != null)
+            {
+                for (var i = 0; i < raids.Length; i++)
+                {
+                    if (raids[i].ServerId == serverId && !string.IsNullOrEmpty(raids[i].Location))
+                    {
+                        HostLocationId = raids[i].Location;
+                        FikaGlobals.LogInfo($"[LocationFix] host location resolved from raid list: {HostLocationId}");
+                        break;
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            FikaGlobals.LogError($"[LocationFix] could not resolve host location: {ex.Message}");
+        }
+        // ──────────────────────────────────────────────────────────────────────
 
         return true;
     }

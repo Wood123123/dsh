@@ -1,4 +1,4 @@
-﻿using Diz.Resources;
+using Diz.Resources;
 using EFT.Ballistics;
 using EFT.Communications;
 using EFT.UI.Matchmaker;
@@ -6,6 +6,7 @@ using EFT.Utilities;
 using JsonType;
 using System;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using Comfort.Common;
@@ -124,6 +125,37 @@ public sealed class TarkovApplication_LocalGameCreator_Patch : ModulePatch
 #endif
         }
 
+        // ── 加入战局时纠正地图（客户端）────────────────────────────────────────
+        // 证据（无头面板 raids\client-LAOHanTUI\…_70e04c.jsonl = 战局码 Y0EZ6N）：
+        //   EFT-headless1（主机）  09:08:49 Starting with: { …"location":"Sandbox"… }
+        //   client-LAOHanTUI       09:09:44 Initializing Exfils: Id bigmap, Exits: 11
+        //   ⇒ 实际战局是【中心区】，客户端却按【海关】初始化撤离点 ⇒ 一个撤离点都没有。
+        // 原因：客户端带着上一次战局的 raidSettings.LocationId，Fika 没有把它改成主机的地图，
+        //       于是发给服务端的 location 是错的，服务端按错地图生成 loot，客户端再用这份 loot
+        //       初始化 ExfiltrationController；而场景由主机决定 ⇒ 出口名全对不上。
+        // 修复：客户端以 matchmaking 阶段记录的主机地图（HostLocationId）为准，在向服务端
+        //       请求战局数据【之前】就把 LocationId / SelectedLocation 改对。
+        // 诊断：客户端进战局时把三个关键值打出来（每次进战局一行，方便下次定位）
+        if (!isServer)
+        {
+            Logger.LogWarning($"[LocationFix] check: raidSettings='{raidSettings.LocationId}' host='{FikaBackendUtils.HostLocationId}' selected='{raidSettings.SelectedLocation?.Id}' transit={isTransit}");
+        }
+
+        if (!isServer && !string.IsNullOrEmpty(FikaBackendUtils.HostLocationId) && session.LocationSettings?.locations != null)
+        {
+            var hostLocation = session.LocationSettings.locations.Values.FirstOrDefault(loc => loc != null
+                && (string.Equals(loc.Id, FikaBackendUtils.HostLocationId, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(loc._Id, FikaBackendUtils.HostLocationId, StringComparison.OrdinalIgnoreCase)));
+
+            if (hostLocation != null && !string.Equals(raidSettings.LocationId, hostLocation.Id, StringComparison.OrdinalIgnoreCase))
+            {
+                Logger.LogWarning($"[LocationFix] client raid location '{raidSettings.LocationId}' -> host location '{hostLocation.Id}'");
+                raidSettings.LocationId = hostLocation.Id;
+                raidSettings.SelectedLocation = hostLocation;
+            }
+        }
+        // ──────────────────────────────────────────────────────────────────────
+
         if (!raidSettings.isInTransition)
         {
             await session.SendRaidSettings(raidSettings);
@@ -147,6 +179,55 @@ public sealed class TarkovApplication_LocalGameCreator_Patch : ModulePatch
         raidSettingsToUpdate.serverId = localSettings.serverId;
         raidSettingsToUpdate.selectedLocation = localSettings.locationLoot;
         raidSettingsToUpdate.selectedLocation.EscapeTimeLimit = escapeTimeLimit;
+
+        // 诊断：服务端返回的 loot 属于哪张地图（与 host 是否一致）
+        if (!isServer)
+        {
+            Logger.LogWarning($"[LocationFix] server loot='{localSettings.locationLoot?.Id}' host='{FikaBackendUtils.HostLocationId}'");
+        }
+
+        // ── 撤离点地图纠正（统一入口）──────────────────────────────────────────
+        // 覆盖两种已知故障：
+        //   ① 转移局：转移后 SelectedLocation 仍是源地图
+        //      证据：16:44:35 战局开始 TarkovStreets，但 16:44:39 Initializing Exfils: Id Sandbox
+        //   ② 普通加入：客户端带着上一次战局的地图
+        //      证据：Y0EZ6N，主机 location: Sandbox，客户端 Initializing Exfils: Id bigmap
+        // 两者都会让 CoopGame.InitPlayer 用错 exits/SecretExits ⇒ 一个撤离点都生成不出来。
+        string authoritativeLocationId = null;
+        if (isTransit)
+        {
+            authoritativeLocationId = instance.transitionStatus.Location;
+            if (string.IsNullOrEmpty(authoritativeLocationId))
+            {
+                authoritativeLocationId = FikaBackendUtils.TransitTargetLocation;
+            }
+
+            FikaBackendUtils.TransitTargetLocation = null;
+        }
+        else if (!isServer)
+        {
+            authoritativeLocationId = FikaBackendUtils.HostLocationId;
+        }
+
+        if (!string.IsNullOrEmpty(authoritativeLocationId) && session.LocationSettings?.locations != null)
+        {
+            var authoritativeLocation = session.LocationSettings.locations.Values.FirstOrDefault(loc => loc != null
+                && (string.Equals(loc.Id, authoritativeLocationId, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(loc._Id, authoritativeLocationId, StringComparison.OrdinalIgnoreCase)));
+
+            if (authoritativeLocation != null
+                && !string.Equals(raidSettings.SelectedLocation?.Id, authoritativeLocation.Id, StringComparison.OrdinalIgnoreCase))
+            {
+                Logger.LogWarning($"[LocationFix] correcting raid location '{raidSettings.SelectedLocation?.Id}' -> '{authoritativeLocation.Id}' (isTransit={isTransit})");
+                raidSettings.LocationId = authoritativeLocation.Id;
+                raidSettings.SelectedLocation = authoritativeLocation;
+                raidSettings.SelectedLocation.EscapeTimeLimit = escapeTimeLimit;
+                raidSettingsToUpdate.location = authoritativeLocation.Id;
+                raidSettingsToUpdate.selectedLocation = authoritativeLocation;
+                raidSettingsToUpdate.selectedLocation.EscapeTimeLimit = escapeTimeLimit;
+            }
+        }
+        // ──────────────────────────────────────────────────────────────────────
 
         var transitData = FikaBackendUtils.TransitData;
         transitData.transitionType = raidSettings.transitionType;

@@ -1,4 +1,4 @@
-﻿using JsonType;
+using JsonType;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -110,6 +110,10 @@ public class ClientTransitController : NetworkTransitController
 
         var location = transitPoint.parameters.location;
         FikaGlobals.LogInfo($"Using transit to {location}");
+        if (!string.IsNullOrEmpty(location))
+        {
+            FikaBackendUtils.TransitTargetLocation = location;
+        }
         var eraidMode = ERaidMode.Local;
         if (TarkovApplication.Exist(out var tarkovApplication))
         {

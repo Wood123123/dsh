@@ -101,6 +101,10 @@ public class CoopHandler : MonoBehaviour
     /// Queue of <see cref="SpawnObject"/> containing all players to spawn
     /// </summary>
     private Queue<SpawnObject> _spawnQueue;
+    // Limit concurrent prefab/pool loading so a large group does not serialize
+    // every player behind the first load or flood the asset worker.
+    private const int MaxConcurrentSpawnLoads = 2;
+    private int _activeSpawnLoads;
     private bool _isClient;
     private float _charSyncCounter;
     private bool _requestQuitGame;
@@ -219,8 +223,9 @@ public class CoopHandler : MonoBehaviour
 
         if (ShouldSync)
         {
-            if (_spawnQueue.Count > 0)
+            while (_spawnQueue.Count > 0 && _activeSpawnLoads < MaxConcurrentSpawnLoads)
             {
+                _activeSpawnLoads++;
                 _ = SpawnPlayer(_spawnQueue.Dequeue());
             }
 
@@ -323,6 +328,18 @@ public class CoopHandler : MonoBehaviour
     }
 
     private async ValueTask SpawnPlayer(SpawnObject spawnObject)
+    {
+        try
+        {
+            await SpawnPlayerCore(spawnObject);
+        }
+        finally
+        {
+            _activeSpawnLoads = Math.Max(0, _activeSpawnLoads - 1);
+        }
+    }
+
+    private async ValueTask SpawnPlayerCore(SpawnObject spawnObject)
     {
         if (spawnObject.Profile == null)
         {

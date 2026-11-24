@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -324,6 +324,16 @@ public sealed class CoopGame : BaseLocalGame<EftGamePlayerOwner>, IFikaGame, ICl
         _logger.LogInfo("Creating CoopHandler");
         await GameController.SetupCoopHandler(this);
 
+        var location = _raidSettings.selectedLocation;
+        Task lootTask = null;
+        if (!GameController.IsServer)
+        {
+            // Start the loot request before local player setup. Exfil and
+            // interactable requests run during CreateLocalPlayer, so all three
+            // independent host requests can progress together.
+            lootTask = ((ClientGameController)GameController).InitializeLootData(location);
+        }
+
         var gameWorld = Singleton<GameWorld>.Instance;
         gameWorld.LocationId = Location.Id;
 
@@ -361,7 +371,21 @@ public sealed class CoopGame : BaseLocalGame<EftGamePlayerOwner>, IFikaGame, ICl
 
         if (FikaBackendUtils.IsReconnect)
         {
-            await GetReconnectProfile(ProfileId);
+            // ── 大退后重连的兜底 ─────────────────────────────────────────────
+            // 主机只在 HumanPlayers 里还留着这个玩家的 ObservedPlayer 时才会回 OwnCharacter
+            // （FikaServer.Callbacks.cs:525）。大退 / 崩溃 / 超时之后那个实体已经被移除，
+            // 主机什么都不回，而 GetReconnectProfile 是 while (Profile == null) 死等
+            // ⇒ 客户端永远卡在"重连中"。
+            // 处理：等待有超时；超时就把这次会话降级成"普通加入"，用原本的本地档案重新生成角色。
+            var spawnProfile = Profile;
+            if (!await GetReconnectProfile(ProfileId))
+            {
+                _logger.LogWarning("Reconnect: host did not return our character (entity gone). Falling back to a normal join.");
+                FikaBackendUtils.IsReconnect = false;
+                FikaBackendUtils.ReconnectPosition = Vector3.zero;
+                FikaBackendUtils.ReconnectRotation = Vector2.zero;
+                Profile = spawnProfile;
+            }
         }
 
         try
@@ -384,8 +408,16 @@ public sealed class CoopGame : BaseLocalGame<EftGamePlayerOwner>, IFikaGame, ICl
 
         await GameController.WaitForHostToStart();
 
-        var location = _raidSettings.selectedLocation;
-        await GameController.InitializeLoot(location);
+        if (GameController.IsServer)
+        {
+            await GameController.InitializeLoot(location);
+        }
+
+        if (lootTask != null)
+        {
+            await lootTask;
+            await FikaRequestHandler.RegisterPlayer(new RegisterPlayerRequest(0, location.Id, 0));
+        }
         await SpawnLoot(location);
 
         GameController.CoopHandler.ShouldSync = true;
@@ -419,7 +451,11 @@ public sealed class CoopGame : BaseLocalGame<EftGamePlayerOwner>, IFikaGame, ICl
         FikaEventDispatcher.DispatchEvent(new GameWorldStartedEvent(GameWorld));
     }
 
-    private async Task GetReconnectProfile(string profileId)
+    /// <summary>
+    /// 向主机索取自己的角色（重连第一步）。返回 false 表示主机没有回（实体已不存在）。
+    /// 超时时间 8 秒：正常情况下主机几乎立刻回复；等不到就说明这次重连注定失败。
+    /// </summary>
+    private async Task<bool> GetReconnectProfile(string profileId)
     {
         Profile = null;
 
@@ -432,13 +468,22 @@ public sealed class CoopGame : BaseLocalGame<EftGamePlayerOwner>, IFikaGame, ICl
         var client = Singleton<FikaClient>.Instance;
         client.SendData(ref reconnectPacket, DeliveryMethod.ReliableOrdered);
 
-        do
+        var waitedMs = 0;
+        while (Profile == null && waitedMs < 8000)
         {
             await Task.Delay(250);
-        } while (Profile == null);
+            waitedMs += 250;
+        }
+
+        if (Profile == null)
+        {
+            return false;
+        }
 
         await Singleton<ObjectsFactory>.Instance.LoadBundlesAndCreatePools(ObjectsFactory.PoolsCategory.Raid, ObjectsFactory.AssemblyType.Local,
             [.. Profile.GetAllPrefabPaths(true)], JobYieldPriority.General);
+
+        return true;
     }
 
     private async Task Reconnect()
@@ -453,10 +498,18 @@ public sealed class CoopGame : BaseLocalGame<EftGamePlayerOwner>, IFikaGame, ICl
         var client = Singleton<FikaClient>.Instance;
         client.SendData(ref reconnectPacket, DeliveryMethod.ReliableOrdered);
 
-        do
+        var waitedMs = 0;
+        while (!client.ReconnectDone && waitedMs < 12000)
         {
             await Task.Delay(1000);
-        } while (!client.ReconnectDone);
+            waitedMs += 1000;
+        }
+
+        if (!client.ReconnectDone)
+        {
+            // 主机没回 Finished：不再无限等，直接继续（继续跑后面的正常战局初始化）
+            _logger.LogWarning("Reconnect: timed out waiting for the host to finish the reconnect handshake.");
+        }
 
         var packet = new ClearSnapshotterPacket
         {
@@ -497,8 +550,9 @@ public sealed class CoopGame : BaseLocalGame<EftGamePlayerOwner>, IFikaGame, ICl
             }
 
             var clientGameController = (ClientGameController)GameController;
-            await clientGameController.InitInteractables();
-            await clientGameController.InitExfils();
+            await Task.WhenAll(
+                clientGameController.InitInteractables(),
+                clientGameController.InitExfils());
         }
 
         GameController.ExfilManager = gameObject.AddComponent<FikaExfilManager>();

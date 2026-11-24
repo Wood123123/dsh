@@ -9,6 +9,7 @@ public class FikaClientGrenade : ObservedGrenade
 
     private GrenadeSyncPacket _packet;
     private bool _hasPacket;
+    private float _packetReceivedAt;
 
     private Coroutine _interpolationRoutine;
 
@@ -16,6 +17,7 @@ public class FikaClientGrenade : ObservedGrenade
     {
         _packet = packet;
         _hasPacket = true;
+        _packetReceivedAt = Time.unscaledTime;
 
         CollisionNumber = _packet.CollisionNumber;
 
@@ -38,16 +40,22 @@ public class FikaClientGrenade : ObservedGrenade
         {
             yield return wait;
 
-            var t = 1f - Mathf.Exp(-_smoothSpeed * Time.fixedDeltaTime);
+            var t = 1f - Mathf.Exp(-_smoothSpeed * Time.unscaledDeltaTime);
+            var elapsed = Mathf.Min(Time.unscaledTime - _packetReceivedAt, 0.5f);
+            var predictedPosition = _packet.Position + (_packet.Velocity * elapsed)
+                + (0.5f * Physics.gravity * elapsed * elapsed);
+            var predictedRotation = _packet.Rotation
+                * Quaternion.Euler(_packet.AngularVelocity * Mathf.Rad2Deg * elapsed);
 
-            transform.SetPositionAndRotation(Vector3.Lerp(transform.position, _packet.Position, t),
-                Quaternion.Lerp(transform.rotation, _packet.Rotation, t));
+            transform.SetPositionAndRotation(Vector3.Lerp(transform.position, predictedPosition, t),
+                Quaternion.Lerp(transform.rotation, predictedRotation, t));
 
             if (Rigidbody != null)
             {
                 if (CollisionNumber == _packet.CollisionNumber)
                 {
-                    Rigidbody.velocity = Vector3.Lerp(Rigidbody.velocity, _packet.Velocity, t);
+                    var predictedVelocity = _packet.Velocity + (Physics.gravity * elapsed);
+                    Rigidbody.velocity = Vector3.Lerp(Rigidbody.velocity, predictedVelocity, t);
 
                     Rigidbody.angularVelocity = Vector3.Lerp(Rigidbody.angularVelocity, _packet.AngularVelocity, t);
                 }
